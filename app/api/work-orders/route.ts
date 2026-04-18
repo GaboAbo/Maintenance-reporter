@@ -17,14 +17,25 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getSessionUser()
     const { searchParams } = new URL(req.url)
-    const status = searchParams.get('status') as any
-    const type = searchParams.get('type') as any
-    const assignedToId = searchParams.get('assignedToId') ?? undefined
-    const workOrders = await listWorkOrders(user.tenantId, {
-      ...(status && { status }),
-      ...(type && { type }),
-      ...(assignedToId && { assignedToId }),
+
+    const filtersResult = z.object({
+      status: z.enum(['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+      type: z.enum(['PREVENTIVE', 'CORRECTIVE']).optional(),
+      assignedToId: z.string().optional(),
+    }).safeParse({
+      status: searchParams.get('status') ?? undefined,
+      type: searchParams.get('type') ?? undefined,
+      assignedToId: searchParams.get('assignedToId') ?? undefined,
     })
+
+    if (!filtersResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid filter value', details: filtersResult.error.flatten().fieldErrors },
+        { status: 400 }
+      )
+    }
+
+    const workOrders = await listWorkOrders(user.tenantId, filtersResult.data)
     return NextResponse.json(workOrders)
   } catch (err: any) {
     if (err.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -51,7 +62,7 @@ export async function POST(req: NextRequest) {
     const { dueDate, ...rest } = parsed.data
     const workOrder = await createWorkOrder(user.tenantId, user.id, {
       ...rest,
-      dueDate: dueDate ? new Date(dueDate) : null,
+      ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
     })
     return NextResponse.json(workOrder, { status: 201 })
   } catch (err: any) {
