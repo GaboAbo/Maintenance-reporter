@@ -13,7 +13,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: 'jwt' },
+  session: { strategy: 'jwt', maxAge: 8 * 60 * 60 }, // 8 hours
   pages: {
     signIn: '/login',
     error: '/login',
@@ -45,7 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
-        const user = await db.user.findFirst({
+        const user = await db.user.findUnique({
           where: { email: credentials.email as string },
           select: { id: true, tenantId: true, name: true, email: true, role: true, password: true, active: true },
         })

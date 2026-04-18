@@ -30,7 +30,7 @@ model User {
   id        String   @id @default(cuid())
   tenantId  String
   name      String
-  email     String
+  email     String   @unique
   password  String
   role      UserRole @default(TECHNICIAN)
   phone     String?
@@ -43,7 +43,6 @@ model User {
   assignedWorkOrders  WorkOrder[]
   workOrderActivities WorkOrderActivity[]
 
-  @@unique([tenantId, email])
 }
 
 model InviteToken {

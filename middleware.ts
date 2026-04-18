@@ -5,7 +5,7 @@ const PUBLIC_PATHS = ['/login', '/register', '/invite', '/api/auth', '/api/regis
 
 export default auth((req) => {
   const { pathname } = req.nextUrl
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p))
+  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
 
   if (!req.auth && !isPublic) {
     return NextResponse.redirect(new URL('/login', req.url))

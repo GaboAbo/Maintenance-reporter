@@ -1,7 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('@/lib/db', () => ({
-  db: { user: { findFirst: vi.fn() } },
+  db: {
+    user: {
+      findUnique: vi.fn(),
+    },
+  },
 }))
 
 import { hashPassword, verifyPassword } from '@/lib/auth'
