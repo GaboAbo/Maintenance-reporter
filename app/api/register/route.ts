@@ -6,12 +6,17 @@ import { hashPassword } from '@/lib/auth'
 const RegisterSchema = z.object({
   orgName: z.string().min(2, 'Organization name must be at least 2 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email'),
+  email: z.string().email('Invalid email').transform((e) => e.toLowerCase()),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
   const parsed = RegisterSchema.safeParse(body)
 
   if (!parsed.success) {
@@ -44,7 +49,7 @@ export async function POST(req: NextRequest) {
       },
       subscription: {
         create: {
-          stripeCustomerId: `pending_${Date.now()}`,
+          stripeCustomerId: `pending_${crypto.randomUUID()}`,
           plan: 'starter',
           status: 'trialing',
         },
