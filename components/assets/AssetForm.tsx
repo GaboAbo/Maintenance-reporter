@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { Asset } from '@prisma/client'
+import type { Asset, AssetStatus } from '@prisma/client'
 
 type AssetFormProps = {
   asset?: Asset
@@ -16,6 +16,7 @@ export function AssetForm({ asset }: AssetFormProps) {
   const router = useRouter()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<AssetStatus>(asset?.status ?? 'ACTIVE')
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -30,28 +31,36 @@ export function AssetForm({ asset }: AssetFormProps) {
       manufacturer: form.get('manufacturer') || null,
       location: form.get('location') || null,
       category: form.get('category') || null,
-      status: form.get('status'),
+      status,
     }
 
     const url = asset ? `/api/assets/${asset.id}` : '/api/assets'
     const method = asset ? 'PUT' : 'POST'
 
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
 
-    setLoading(false)
+      if (!res.ok) {
+        let msg = 'Failed to save asset'
+        try {
+          const data = await res.json()
+          msg = data.error ?? msg
+        } catch {}
+        setError(msg)
+        return
+      }
 
-    if (!res.ok) {
-      const data = await res.json()
-      setError(data.error ?? 'Failed to save asset')
-      return
+      router.push('/assets')
+      router.refresh()
+    } catch {
+      setError('Network error — please try again')
+    } finally {
+      setLoading(false)
     }
-
-    router.push('/assets')
-    router.refresh()
   }
 
   return (
@@ -86,7 +95,7 @@ export function AssetForm({ asset }: AssetFormProps) {
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="status">Status</Label>
-        <Select name="status" defaultValue={asset?.status ?? 'ACTIVE'}>
+        <Select value={status} onValueChange={(v) => setStatus(v as AssetStatus)}>
           <SelectTrigger id="status">
             <SelectValue />
           </SelectTrigger>
@@ -102,7 +111,7 @@ export function AssetForm({ asset }: AssetFormProps) {
         <Button type="submit" disabled={loading}>
           {loading ? 'Saving…' : asset ? 'Update asset' : 'Create asset'}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.back()}>
+        <Button type="button" variant="outline" onClick={() => router.push('/assets')}>
           Cancel
         </Button>
       </div>

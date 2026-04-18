@@ -8,6 +8,6 @@ const STATUS_MAP: Record<AssetStatus, { label: string; variant: 'default' | 'sec
 }
 
 export function AssetStatusBadge({ status }: { status: AssetStatus }) {
-  const { label, variant } = STATUS_MAP[status]
+  const { label, variant } = STATUS_MAP[status] ?? { label: status, variant: 'secondary' as const }
   return <Badge variant={variant}>{label}</Badge>
 }
