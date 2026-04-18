@@ -1,6 +1,10 @@
+import dns from 'dns'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
+
+// Force IPv4 — Supabase DNS also resolves to IPv6 which may be unreachable
+dns.setDefaultResultOrder('ipv4first')
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
