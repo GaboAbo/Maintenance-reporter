@@ -10,9 +10,13 @@ vi.mock('@/lib/db', () => ({
     },
     workOrderItem: {
       update: vi.fn(),
+      findMany: vi.fn(),
     },
     workOrderActivity: {
       create: vi.fn(),
+    },
+    asset: {
+      findMany: vi.fn(),
     },
   },
 }))
@@ -68,6 +72,7 @@ describe('getWorkOrder', () => {
 
 describe('createWorkOrder', () => {
   it('creates with tenantId, items per assetId, and CREATED activity', async () => {
+    vi.mocked(db.asset.findMany).mockResolvedValue([{ id: 'a1' }, { id: 'a2' }] as any)
     vi.mocked(db.workOrder.create).mockResolvedValue({ id: 'w1' } as any)
     await createWorkOrder(TENANT, USER, {
       type: 'CORRECTIVE',
@@ -85,6 +90,13 @@ describe('createWorkOrder', () => {
         }),
       })
     )
+  })
+
+  it('throws when assetIds contain a non-tenant asset', async () => {
+    vi.mocked(db.asset.findMany).mockResolvedValue([{ id: 'a1' }] as any)
+    await expect(
+      createWorkOrder(TENANT, USER, { type: 'CORRECTIVE', assetIds: ['a1', 'other-tenant'] })
+    ).rejects.toThrow('One or more assets not found')
   })
 })
 
@@ -136,6 +148,10 @@ describe('updateWorkOrderItem', () => {
       ],
     } as any)
     vi.mocked(db.workOrderItem.update).mockResolvedValue({} as any)
+    vi.mocked(db.workOrderItem.findMany).mockResolvedValue([
+      { id: 'i1', status: 'in_progress' },
+      { id: 'i2', status: 'open' },
+    ] as any)
     vi.mocked(db.workOrder.update).mockResolvedValue({} as any)
     vi.mocked(db.workOrderActivity.create).mockResolvedValue({} as any)
     await updateWorkOrderItem(TENANT, 'w1', 'i1', USER, { status: 'in_progress' })
@@ -156,6 +172,10 @@ describe('updateWorkOrderItem', () => {
       ],
     } as any)
     vi.mocked(db.workOrderItem.update).mockResolvedValue({} as any)
+    vi.mocked(db.workOrderItem.findMany).mockResolvedValue([
+      { id: 'i1', status: 'completed' },
+      { id: 'i2', status: 'completed' },
+    ] as any)
     vi.mocked(db.workOrder.update).mockResolvedValue({} as any)
     vi.mocked(db.workOrderActivity.create).mockResolvedValue({} as any)
     await updateWorkOrderItem(TENANT, 'w1', 'i2', USER, { status: 'completed' })
@@ -196,5 +216,12 @@ describe('cancelWorkOrder', () => {
   it('throws when not found', async () => {
     vi.mocked(db.workOrder.findFirst).mockResolvedValue(null)
     await expect(cancelWorkOrder(TENANT, 'missing', USER)).rejects.toThrow('Not found')
+  })
+
+  it('does not log activity when already cancelled', async () => {
+    vi.mocked(db.workOrder.findFirst).mockResolvedValue({ id: 'w1', status: 'CANCELLED' } as any)
+    await cancelWorkOrder(TENANT, 'w1', USER)
+    expect(db.workOrder.update).not.toHaveBeenCalled()
+    expect(db.workOrderActivity.create).not.toHaveBeenCalled()
   })
 })

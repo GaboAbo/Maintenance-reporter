@@ -64,12 +64,23 @@ export async function getWorkOrder(tenantId: string, id: string) {
   })
 }
 
+async function assertAssetsOwnedByTenant(tenantId: string, assetIds: string[]): Promise<void> {
+  const owned = await db.asset.findMany({
+    where: { id: { in: assetIds }, tenantId },
+    select: { id: true },
+  })
+  if (owned.length !== assetIds.length) {
+    throw Object.assign(new Error('One or more assets not found'), { code: 'P2025' })
+  }
+}
+
 export async function createWorkOrder(
   tenantId: string,
   userId: string,
   data: WorkOrderInput
 ) {
   const { assetIds, ...rest } = data
+  await assertAssetsOwnedByTenant(tenantId, assetIds)
   return db.workOrder.create({
     data: {
       ...rest,
@@ -135,18 +146,19 @@ export async function updateWorkOrderItem(
   })
   if (!workOrder) throw Object.assign(new Error('Not found'), { code: 'P2025' })
 
-  await db.workOrderItem.update({ where: { id: itemId }, data })
+  await db.workOrderItem.update({ where: { id: itemId, workOrderId }, data })
 
-  const updatedItems = workOrder.items.map((item) =>
-    item.id === itemId ? { ...item, status: data.status ?? item.status } : item
-  )
+  const siblings = await db.workOrderItem.findMany({
+    where: { workOrderId },
+    select: { id: true, status: true },
+  })
 
   let newWoStatus: WorkOrderStatus | undefined
   if (data.status === 'in_progress' && workOrder.status === 'OPEN') {
     newWoStatus = 'IN_PROGRESS'
   } else if (
     data.status === 'completed' &&
-    updatedItems.every((item) => item.status === 'completed')
+    siblings.every((item) => item.status === 'completed')
   ) {
     newWoStatus = 'COMPLETED'
   }
@@ -177,6 +189,13 @@ export async function updateWorkOrderItem(
       payload: { itemId, changes: data },
     },
   })
+
+  return db.workOrder.findFirst({
+    where: { id: workOrderId },
+    include: {
+      items: { include: { asset: { select: { id: true, name: true } } } },
+    },
+  })
 }
 
 export async function cancelWorkOrder(
@@ -189,6 +208,8 @@ export async function cancelWorkOrder(
     select: { id: true, status: true },
   })
   if (!existing) throw Object.assign(new Error('Not found'), { code: 'P2025' })
+
+  if (existing.status === 'CANCELLED') return existing as any
 
   const updated = await db.workOrder.update({
     where: { id },
