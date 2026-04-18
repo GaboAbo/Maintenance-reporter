@@ -45,27 +45,30 @@ export async function runPmCheck(): Promise<{ generated: number }> {
       schedule.intervalUnit
     )
 
-    await db.$transaction(async (tx) => {
-      await tx.workOrder.create({
-        data: {
-          tenantId: schedule.tenantId,
-          type: 'PREVENTIVE',
-          status: 'OPEN',
-          priority: 'MEDIUM',
-          linkedScheduleId: schedule.id,
-          items: {
-            create: schedule.assets.map(({ assetId }) => ({ assetId })),
+    try {
+      await db.$transaction(async (tx) => {
+        await tx.workOrder.create({
+          data: {
+            tenantId: schedule.tenantId,
+            type: 'PREVENTIVE',
+            status: 'OPEN',
+            priority: 'MEDIUM',
+            linkedScheduleId: schedule.id,
+            items: {
+              create: schedule.assets.map(({ assetId }) => ({ assetId })),
+            },
           },
-        },
-      })
+        })
 
-      await tx.maintenanceSchedule.update({
-        where: { id: schedule.id },
-        data: { nextDueDate: nextDue },
+        await tx.maintenanceSchedule.update({
+          where: { id: schedule.id },
+          data: { nextDueDate: nextDue },
+        })
       })
-    })
-
-    generated++
+      generated++
+    } catch (err) {
+      console.error(`[pm-check] Failed to process schedule ${schedule.id}:`, err)
+    }
   }
 
   return { generated }

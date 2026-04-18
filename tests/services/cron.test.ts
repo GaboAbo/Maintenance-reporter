@@ -37,11 +37,22 @@ describe('runPmCheck', () => {
     expect(db.workOrder.create).not.toHaveBeenCalled()
   })
 
+  it('only queries time_based schedules', async () => {
+    vi.mocked(db.maintenanceSchedule.findMany).mockResolvedValue([])
+    await runPmCheck()
+    expect(db.maintenanceSchedule.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ triggerType: 'time_based' }),
+      })
+    )
+  })
+
   it('creates a PREVENTIVE work order for each due schedule', async () => {
     vi.mocked(db.maintenanceSchedule.findMany).mockResolvedValue([
       {
         id: 's1',
         tenantId: 't1',
+        triggerType: 'time_based',
         nextDueDate: new Date('2026-04-01'),
         intervalValue: 30,
         intervalUnit: 'days',
@@ -73,6 +84,7 @@ describe('runPmCheck', () => {
       {
         id: 's1',
         tenantId: 't1',
+        triggerType: 'time_based',
         nextDueDate,
         intervalValue: 30,
         intervalUnit: 'days',
@@ -97,6 +109,7 @@ describe('runPmCheck', () => {
       {
         id: 's1',
         tenantId: 't1',
+        triggerType: 'time_based',
         nextDueDate,
         intervalValue: 1,
         intervalUnit: 'months',
@@ -120,6 +133,7 @@ describe('runPmCheck', () => {
       {
         id: 's1',
         tenantId: 't1',
+        triggerType: 'time_based',
         nextDueDate: new Date('2026-04-01'),
         intervalValue: 7,
         intervalUnit: 'days',
@@ -133,12 +147,40 @@ describe('runPmCheck', () => {
     expect(db.workOrder.create).not.toHaveBeenCalled()
   })
 
-  it('clamps month-end overflow (Jan 31 + 1 month = Feb 28)', async () => {
-    const nextDueDate = new Date('2026-01-31T00:00:00.000Z')
+  it('advances nextDueDate by weeks interval', async () => {
+    const nextDueDate = new Date(2026, 3, 1) // local-time Apr 1
     vi.mocked(db.maintenanceSchedule.findMany).mockResolvedValue([
       {
         id: 's1',
         tenantId: 't1',
+        triggerType: 'time_based',
+        nextDueDate,
+        intervalValue: 2,
+        intervalUnit: 'weeks',
+        assets: [{ assetId: 'a1' }],
+      },
+    ] as any)
+    vi.mocked(db.workOrder.create).mockResolvedValue({ id: 'w1' } as any)
+    vi.mocked(db.maintenanceSchedule.update).mockResolvedValue({} as any)
+
+    await runPmCheck()
+
+    const expectedNext = new Date(2026, 3, 15) // Apr 1 + 14 days
+    expect(db.maintenanceSchedule.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 's1' },
+        data: { nextDueDate: expectedNext },
+      })
+    )
+  })
+
+  it('clamps month-end overflow (Jan 31 + 1 month = Feb 28)', async () => {
+    const nextDueDate = new Date(2026, 0, 31) // local-time Jan 31
+    vi.mocked(db.maintenanceSchedule.findMany).mockResolvedValue([
+      {
+        id: 's1',
+        tenantId: 't1',
+        triggerType: 'time_based',
         nextDueDate,
         intervalValue: 1,
         intervalUnit: 'months',
