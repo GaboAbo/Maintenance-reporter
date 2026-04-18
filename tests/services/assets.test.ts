@@ -12,7 +12,7 @@ vi.mock('@/lib/db', () => ({
 }))
 
 import { db } from '@/lib/db'
-import { listAssets, getAsset, createAsset, updateAsset } from '@/lib/services/assets'
+import { listAssets, getAsset, createAsset, updateAsset, decommissionAsset } from '@/lib/services/assets'
 
 const TENANT = 't1'
 
@@ -59,10 +59,38 @@ describe('createAsset', () => {
 
 describe('updateAsset', () => {
   it('scopes update to tenantId', async () => {
+    vi.mocked(db.asset.findFirst).mockResolvedValue({ id: 'a1' } as any)
     vi.mocked(db.asset.update).mockResolvedValue({ id: 'a1', name: 'Updated' } as any)
     await updateAsset(TENANT, 'a1', { name: 'Updated' })
-    expect(db.asset.update).toHaveBeenCalledWith(
+    expect(db.asset.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'a1', tenantId: TENANT } })
     )
+    expect(db.asset.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'a1' } })
+    )
+  })
+
+  it('throws when asset not found for tenant', async () => {
+    vi.mocked(db.asset.findFirst).mockResolvedValue(null)
+    await expect(updateAsset(TENANT, 'missing', { name: 'X' })).rejects.toThrow('Not found')
+  })
+})
+
+describe('decommissionAsset', () => {
+  it('sets status to DECOMMISSIONED scoped to tenantId', async () => {
+    vi.mocked(db.asset.findFirst).mockResolvedValue({ id: 'a1' } as any)
+    vi.mocked(db.asset.update).mockResolvedValue({ id: 'a1', status: 'DECOMMISSIONED' } as any)
+    await decommissionAsset(TENANT, 'a1')
+    expect(db.asset.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'a1', tenantId: TENANT } })
+    )
+    expect(db.asset.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'a1' }, data: { status: 'DECOMMISSIONED' } })
+    )
+  })
+
+  it('throws when asset not found for tenant', async () => {
+    vi.mocked(db.asset.findFirst).mockResolvedValue(null)
+    await expect(decommissionAsset(TENANT, 'missing')).rejects.toThrow('Not found')
   })
 })

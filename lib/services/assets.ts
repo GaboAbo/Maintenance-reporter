@@ -46,15 +46,13 @@ export async function createAsset(tenantId: string, data: AssetInput) {
 }
 
 export async function updateAsset(tenantId: string, id: string, data: Partial<AssetInput>) {
-  return db.asset.update({
-    where: { id, tenantId },
-    data,
-  })
+  const existing = await db.asset.findFirst({ where: { id, tenantId }, select: { id: true } })
+  if (!existing) throw Object.assign(new Error('Not found'), { code: 'P2025' })
+  return db.asset.update({ where: { id }, data })
 }
 
 export async function decommissionAsset(tenantId: string, id: string) {
-  return db.asset.update({
-    where: { id, tenantId },
-    data: { status: 'DECOMMISSIONED' },
-  })
+  const existing = await db.asset.findFirst({ where: { id, tenantId }, select: { id: true } })
+  if (!existing) throw Object.assign(new Error('Not found'), { code: 'P2025' })
+  return db.asset.update({ where: { id }, data: { status: 'DECOMMISSIONED' } })
 }
