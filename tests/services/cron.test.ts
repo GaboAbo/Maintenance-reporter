@@ -1,16 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('@/lib/db', () => ({
-  db: {
-    maintenanceSchedule: {
-      findMany: vi.fn(),
-      update: vi.fn(),
+vi.mock('@/lib/db', () => {
+  const workOrderCreate = vi.fn()
+  const scheduleUpdate = vi.fn()
+  const scheduleFindMany = vi.fn()
+
+  return {
+    db: {
+      maintenanceSchedule: {
+        findMany: scheduleFindMany,
+        update: scheduleUpdate,
+      },
+      workOrder: {
+        create: workOrderCreate,
+      },
+      $transaction: vi.fn(async (fn: (tx: any) => Promise<any>) =>
+        fn({
+          workOrder: { create: workOrderCreate },
+          maintenanceSchedule: { update: scheduleUpdate },
+        })
+      ),
     },
-    workOrder: {
-      create: vi.fn(),
-    },
-  },
-}))
+  }
+})
 
 import { db } from '@/lib/db'
 import { runPmCheck } from '@/lib/services/cron'
@@ -119,5 +131,28 @@ describe('runPmCheck', () => {
 
     expect(result).toEqual({ generated: 0 })
     expect(db.workOrder.create).not.toHaveBeenCalled()
+  })
+
+  it('clamps month-end overflow (Jan 31 + 1 month = Feb 28)', async () => {
+    const nextDueDate = new Date('2026-01-31T00:00:00.000Z')
+    vi.mocked(db.maintenanceSchedule.findMany).mockResolvedValue([
+      {
+        id: 's1',
+        tenantId: 't1',
+        nextDueDate,
+        intervalValue: 1,
+        intervalUnit: 'months',
+        assets: [{ assetId: 'a1' }],
+      },
+    ] as any)
+    vi.mocked(db.workOrder.create).mockResolvedValue({ id: 'w1' } as any)
+    vi.mocked(db.maintenanceSchedule.update).mockResolvedValue({} as any)
+
+    await runPmCheck()
+
+    const updateCall = vi.mocked(db.maintenanceSchedule.update).mock.calls[0][0]
+    const nextDate = (updateCall as any).data.nextDueDate
+    expect(nextDate.getMonth()).toBe(1)  // February (0-indexed)
+    expect(nextDate.getDate()).toBeLessThanOrEqual(28)  // Feb has max 28/29 days
   })
 })

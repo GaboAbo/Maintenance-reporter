@@ -10,9 +10,15 @@ function advanceDueDate(
     case 'weeks':
       next.setDate(next.getDate() + intervalValue * 7)
       break
-    case 'months':
+    case 'months': {
+      const day = next.getDate()
       next.setMonth(next.getMonth() + intervalValue)
+      // Clamp to last day of target month if overflow occurred (e.g. Jan 31 + 1 month)
+      if (next.getDate() !== day) {
+        next.setDate(0) // day 0 = last day of previous month
+      }
       break
+    }
     default: // 'days' or null
       next.setDate(next.getDate() + intervalValue)
       break
@@ -24,7 +30,7 @@ export async function runPmCheck(): Promise<{ generated: number }> {
   const now = new Date()
 
   const dueSchedules = await db.maintenanceSchedule.findMany({
-    where: { status: 'active', nextDueDate: { lte: now } },
+    where: { status: 'active', triggerType: 'time_based', nextDueDate: { lte: now } },
     include: { assets: { select: { assetId: true } } },
   })
 
@@ -33,27 +39,30 @@ export async function runPmCheck(): Promise<{ generated: number }> {
   for (const schedule of dueSchedules) {
     if (schedule.assets.length === 0) continue
 
-    await db.workOrder.create({
-      data: {
-        tenantId: schedule.tenantId,
-        type: 'PREVENTIVE',
-        status: 'OPEN',
-        priority: 'MEDIUM',
-        linkedScheduleId: schedule.id,
-        items: {
-          create: schedule.assets.map(({ assetId }) => ({ assetId })),
-        },
-      },
-    })
-
     const nextDue = advanceDueDate(
       schedule.nextDueDate,
       schedule.intervalValue,
       schedule.intervalUnit
     )
-    await db.maintenanceSchedule.update({
-      where: { id: schedule.id },
-      data: { nextDueDate: nextDue },
+
+    await db.$transaction(async (tx) => {
+      await tx.workOrder.create({
+        data: {
+          tenantId: schedule.tenantId,
+          type: 'PREVENTIVE',
+          status: 'OPEN',
+          priority: 'MEDIUM',
+          linkedScheduleId: schedule.id,
+          items: {
+            create: schedule.assets.map(({ assetId }) => ({ assetId })),
+          },
+        },
+      })
+
+      await tx.maintenanceSchedule.update({
+        where: { id: schedule.id },
+        data: { nextDueDate: nextDue },
+      })
     })
 
     generated++
