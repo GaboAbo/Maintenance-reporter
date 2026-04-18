@@ -30,20 +30,28 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
       }),
     })
 
-    const data = await res.json()
+    const data = await res.json() as { email?: string; error?: string }
     if (!res.ok) {
       setLoading(false)
       setError(data.error ?? 'Failed to accept invite')
       return
     }
+    if (!data.email) {
+      setLoading(false)
+      setError('Unexpected server response')
+      return
+    }
 
-    await signIn('credentials', {
-      email: data.email,
-      password: form.get('password'),
-      redirect: false,
-    })
-
-    router.push('/dashboard')
+    try {
+      await signIn('credentials', {
+        email: data.email,
+        password: form.get('password'),
+        redirect: false,
+      })
+      router.push('/dashboard')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -54,14 +62,14 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
           <CardDescription>Create your account to join your team.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="name">Your name</Label>
-              <Input id="name" name="name" required />
+              <Input id="name" name="name" required autoComplete="name" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required minLength={8} />
+              <Input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <Button type="submit" disabled={loading} className="w-full">

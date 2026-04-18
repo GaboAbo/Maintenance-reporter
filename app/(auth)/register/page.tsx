@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,13 +39,16 @@ export default function RegisterPage() {
       return
     }
 
-    await signIn('credentials', {
-      email: form.get('email'),
-      password: form.get('password'),
-      redirect: false,
-    })
-
-    router.push('/dashboard')
+    try {
+      await signIn('credentials', {
+        email: form.get('email'),
+        password: form.get('password'),
+        redirect: false,
+      })
+      router.push('/dashboard')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -55,22 +59,22 @@ export default function RegisterPage() {
           <CardDescription>You'll be set up as the admin.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orgName">Organization name</Label>
-              <Input id="orgName" name="orgName" required />
+              <Input id="orgName" name="orgName" required autoComplete="organization" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="name">Your name</Label>
-              <Input id="name" name="name" required />
+              <Input id="name" name="name" required autoComplete="name" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" required />
+              <Input id="email" name="email" type="email" required autoComplete="email" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required minLength={8} />
+              <Input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <Button type="submit" disabled={loading} className="w-full">
@@ -78,9 +82,9 @@ export default function RegisterPage() {
             </Button>
             <p className="text-center text-sm text-zinc-500">
               Already have an account?{' '}
-              <a href="/login" className="underline">
+              <Link href="/login" className="underline">
                 Sign in
-              </a>
+              </Link>
             </p>
           </form>
         </CardContent>
