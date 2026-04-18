@@ -1,13 +1,201 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users                User[]
+  assets               Asset[]
+  maintenanceSchedules MaintenanceSchedule[]
+  workOrders           WorkOrder[]
+  inviteTokens         InviteToken[]
+  subscription         Subscription?
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  TECHNICIAN
+}
+
+model User {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(TECHNICIAN)
+  phone     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant              Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  notificationPrefs   NotificationPreference?
+  assignedWorkOrders  WorkOrder[]
+  workOrderActivities WorkOrderActivity[]
+}
+
+model InviteToken {
+  id        String    @id @default(cuid())
+  tenantId  String
+  email     String
+  role      UserRole  @default(TECHNICIAN)
+  token     String    @unique @default(cuid())
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model NotificationPreference {
+  id     String  @id @default(cuid())
+  userId String  @unique
+  email  Boolean @default(true)
+  sms    Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum AssetStatus {
+  ACTIVE
+  INACTIVE
+  DECOMMISSIONED
+}
+
+model Asset {
+  id               String      @id @default(cuid())
+  tenantId         String
+  name             String
+  serialNumber     String?
+  model            String?
+  manufacturer     String?
+  location         String?
+  category         String?
+  status           AssetStatus @default(ACTIVE)
+  installationDate DateTime?
+  warrantyExpiry   DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scheduleAssets ScheduleAsset[]
+  workOrderItems WorkOrderItem[]
+}
+
+model MaintenanceSchedule {
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  triggerType   String   // "time_based" | "usage_based"
+  intervalValue Int
+  intervalUnit  String?  // "days" | "weeks" | "months"
+  nextDueDate   DateTime
+  status        String   @default("active") // "active" | "paused"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assets     ScheduleAsset[]
+  workOrders WorkOrder[]
+}
+
+model ScheduleAsset {
+  scheduleId String
+  assetId    String
+
+  schedule MaintenanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  asset    Asset               @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@id([scheduleId, assetId])
+}
+
+enum WorkOrderType {
+  PREVENTIVE
+  CORRECTIVE
+}
+
+enum WorkOrderStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model WorkOrder {
+  id               String          @id @default(cuid())
+  tenantId         String
+  type             WorkOrderType
+  status           WorkOrderStatus @default(OPEN)
+  priority         Priority        @default(MEDIUM)
+  description      String?
+  assignedToId     String?
+  dueDate          DateTime?
+  linkedScheduleId String?
+  completedAt      DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  tenant         Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignedTo     User?                @relation(fields: [assignedToId], references: [id])
+  linkedSchedule MaintenanceSchedule? @relation(fields: [linkedScheduleId], references: [id])
+  items          WorkOrderItem[]
+  activities     WorkOrderActivity[]
+}
+
+model WorkOrderItem {
+  id          String    @id @default(cuid())
+  workOrderId String
+  assetId     String
+  checklist   Json      @default("[]")
+  notes       String?
+  photos      Json      @default("[]")
+  status      String    @default("open") // "open" | "in_progress" | "completed"
+  completedAt DateTime?
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  asset     Asset     @relation(fields: [assetId], references: [id])
+}
+
+model WorkOrderActivity {
+  id          String   @id @default(cuid())
+  workOrderId String
+  userId      String
+  eventType   String
+  payload     Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  tenantId             String    @unique
+  stripeCustomerId     String    @unique
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  plan                 String    @default("starter") // "starter" | "pro"
+  status               String    @default("active")
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
