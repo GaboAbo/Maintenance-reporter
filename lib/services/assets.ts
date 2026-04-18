@@ -1,0 +1,60 @@
+import { db } from '@/lib/db'
+import type { AssetStatus } from '@prisma/client'
+
+type AssetInput = {
+  name: string
+  serialNumber?: string | null
+  model?: string | null
+  manufacturer?: string | null
+  location?: string | null
+  category?: string | null
+  status?: AssetStatus
+  installationDate?: Date | null
+  warrantyExpiry?: Date | null
+}
+
+export async function listAssets(tenantId: string) {
+  return db.asset.findMany({
+    where: { tenantId },
+    orderBy: { name: 'asc' },
+    include: {
+      _count: { select: { workOrderItems: true } },
+    },
+  })
+}
+
+export async function getAsset(tenantId: string, id: string) {
+  return db.asset.findFirst({
+    where: { id, tenantId },
+    include: {
+      workOrderItems: {
+        include: { workOrder: { select: { id: true, type: true, status: true, createdAt: true } } },
+        orderBy: { workOrder: { createdAt: 'desc' } },
+        take: 10,
+      },
+      scheduleAssets: {
+        include: { schedule: true },
+      },
+    },
+  })
+}
+
+export async function createAsset(tenantId: string, data: AssetInput) {
+  return db.asset.create({
+    data: { ...data, tenantId, status: data.status ?? 'ACTIVE' },
+  })
+}
+
+export async function updateAsset(tenantId: string, id: string, data: Partial<AssetInput>) {
+  return db.asset.update({
+    where: { id, tenantId },
+    data,
+  })
+}
+
+export async function decommissionAsset(tenantId: string, id: string) {
+  return db.asset.update({
+    where: { id, tenantId },
+    data: { status: 'DECOMMISSIONED' },
+  })
+}
