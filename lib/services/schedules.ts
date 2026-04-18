@@ -40,8 +40,19 @@ export async function getSchedule(tenantId: string, id: string) {
   })
 }
 
+async function assertAssetsOwnedByTenant(tenantId: string, assetIds: string[]): Promise<void> {
+  const owned = await db.asset.findMany({
+    where: { id: { in: assetIds }, tenantId },
+    select: { id: true },
+  })
+  if (owned.length !== assetIds.length) {
+    throw Object.assign(new Error('One or more assets not found'), { code: 'P2025' })
+  }
+}
+
 export async function createSchedule(tenantId: string, data: ScheduleInput) {
   const { assetIds, ...rest } = data
+  await assertAssetsOwnedByTenant(tenantId, assetIds)
   return db.maintenanceSchedule.create({
     data: {
       ...rest,
@@ -65,6 +76,11 @@ export async function updateSchedule(
   if (!existing) throw Object.assign(new Error('Not found'), { code: 'P2025' })
 
   const { assetIds, ...rest } = data
+
+  if (assetIds !== undefined) {
+    await assertAssetsOwnedByTenant(tenantId, assetIds)
+  }
+
   return db.maintenanceSchedule.update({
     where: { id },
     data: {

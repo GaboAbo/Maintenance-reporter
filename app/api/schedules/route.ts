@@ -47,6 +47,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(schedule, { status: 201 })
   } catch (err: any) {
     if (err.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (err.code === 'P2025') return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (err.code === 'P2003') return NextResponse.json({ error: 'Invalid asset reference' }, { status: 400 })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

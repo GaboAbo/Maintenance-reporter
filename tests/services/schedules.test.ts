@@ -9,6 +9,9 @@ vi.mock('@/lib/db', () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    asset: {
+      findMany: vi.fn(),
+    },
   },
 }))
 
@@ -64,6 +67,7 @@ describe('getSchedule', () => {
 
 describe('createSchedule', () => {
   it('creates with tenantId and asset junction records', async () => {
+    vi.mocked(db.asset.findMany).mockResolvedValue([{ id: 'a1' }, { id: 'a2' }] as any)
     vi.mocked(db.maintenanceSchedule.create).mockResolvedValue({ id: 's1' } as any)
     await createSchedule(TENANT, {
       name: 'Monthly PM',
@@ -84,6 +88,20 @@ describe('createSchedule', () => {
         }),
       })
     )
+  })
+
+  it('throws when assetIds contain a non-tenant asset', async () => {
+    vi.mocked(db.asset.findMany).mockResolvedValue([{ id: 'a1' }] as any)
+    await expect(
+      createSchedule(TENANT, {
+        name: 'PM',
+        triggerType: 'time_based',
+        intervalValue: 7,
+        intervalUnit: 'days',
+        nextDueDate: new Date('2026-05-01'),
+        assetIds: ['a1', 'other-tenant-asset'],
+      })
+    ).rejects.toThrow('One or more assets not found')
   })
 })
 
@@ -107,6 +125,7 @@ describe('updateSchedule', () => {
 
   it('resets asset associations when assetIds provided', async () => {
     vi.mocked(db.maintenanceSchedule.findFirst).mockResolvedValue({ id: 's1' } as any)
+    vi.mocked(db.asset.findMany).mockResolvedValue([{ id: 'a3' }] as any)
     vi.mocked(db.maintenanceSchedule.update).mockResolvedValue({ id: 's1' } as any)
     await updateSchedule(TENANT, 's1', { assetIds: ['a3'] })
     expect(db.maintenanceSchedule.update).toHaveBeenCalledWith(
