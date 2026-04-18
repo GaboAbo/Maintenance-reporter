@@ -1,0 +1,13 @@
+import { AssetForm } from '@/components/assets/AssetForm'
+
+export default function NewAssetPage() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold">New asset</h1>
+        <p className="text-sm text-zinc-500">Add a piece of equipment to your asset registry.</p>
+      </div>
+      <AssetForm />
+    </div>
+  )
+}
