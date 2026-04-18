@@ -30,7 +30,7 @@ model User {
   id        String   @id @default(cuid())
   tenantId  String
   name      String
-  email     String   @unique
+  email     String
   password  String
   role      UserRole @default(TECHNICIAN)
   phone     String?
@@ -42,6 +42,8 @@ model User {
   notificationPrefs   NotificationPreference?
   assignedWorkOrders  WorkOrder[]
   workOrderActivities WorkOrderActivity[]
+
+  @@unique([tenantId, email])
 }
 
 model InviteToken {
@@ -55,6 +57,8 @@ model InviteToken {
   createdAt DateTime  @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model NotificationPreference {
@@ -90,6 +94,9 @@ model Asset {
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   scheduleAssets ScheduleAsset[]
   workOrderItems WorkOrderItem[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
 }
 
 model MaintenanceSchedule {
@@ -107,6 +114,8 @@ model MaintenanceSchedule {
   tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   assets     ScheduleAsset[]
   workOrders WorkOrder[]
+
+  @@index([tenantId])
 }
 
 model ScheduleAsset {
@@ -153,10 +162,13 @@ model WorkOrder {
   updatedAt        DateTime        @updatedAt
 
   tenant         Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  assignedTo     User?                @relation(fields: [assignedToId], references: [id])
-  linkedSchedule MaintenanceSchedule? @relation(fields: [linkedScheduleId], references: [id])
+  assignedTo     User?                @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  linkedSchedule MaintenanceSchedule? @relation(fields: [linkedScheduleId], references: [id], onDelete: SetNull)
   items          WorkOrderItem[]
   activities     WorkOrderActivity[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, assignedToId])
 }
 
 model WorkOrderItem {
@@ -170,7 +182,7 @@ model WorkOrderItem {
   completedAt DateTime?
 
   workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
-  asset     Asset     @relation(fields: [assetId], references: [id])
+  asset     Asset     @relation(fields: [assetId], references: [id], onDelete: Restrict)
 }
 
 model WorkOrderActivity {
@@ -182,7 +194,7 @@ model WorkOrderActivity {
   createdAt   DateTime @default(now())
 
   workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id])
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
 }
 
 model Subscription {
