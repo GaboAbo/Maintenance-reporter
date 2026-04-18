@@ -31,13 +31,15 @@ export default function RegisterPage() {
       }),
     })
 
-    const data = await res.json()
-
     if (!res.ok) {
       setLoading(false)
-      setError(data.error ?? 'Registration failed')
+      let msg = 'Registration failed'
+      try { const d = await res.json(); msg = d.error ?? msg } catch {}
+      setError(msg)
       return
     }
+
+    const data = await res.json()
 
     try {
       await signIn('credentials', {
