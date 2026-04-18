@@ -48,6 +48,18 @@ describe('getSchedule', () => {
       expect.objectContaining({ where: { id: 's1', tenantId: TENANT } })
     )
   })
+
+  it('returns schedule when found', async () => {
+    const schedule = { id: 's1', tenantId: TENANT, name: 'Monthly PM', assets: [], workOrders: [] }
+    vi.mocked(db.maintenanceSchedule.findFirst).mockResolvedValue(schedule as any)
+    const result = await getSchedule(TENANT, 's1')
+    expect(result?.name).toBe('Monthly PM')
+    expect(db.maintenanceSchedule.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({ assets: expect.anything(), workOrders: expect.anything() }),
+      })
+    )
+  })
 })
 
 describe('createSchedule', () => {

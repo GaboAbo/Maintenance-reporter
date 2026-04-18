@@ -1,10 +1,12 @@
 import { db } from '@/lib/db'
 
+type ScheduleStatus = 'active' | 'paused'
+
 type ScheduleInput = {
   name: string
-  triggerType: string
+  triggerType: 'time_based' | 'usage_based'
   intervalValue: number
-  intervalUnit?: string | null
+  intervalUnit?: 'days' | 'weeks' | 'months' | null
   nextDueDate: Date
   assetIds: string[]
 }
@@ -83,7 +85,7 @@ export async function toggleScheduleStatus(tenantId: string, id: string) {
     select: { id: true, status: true },
   })
   if (!existing) throw Object.assign(new Error('Not found'), { code: 'P2025' })
-  const newStatus = existing.status === 'active' ? 'paused' : 'active'
+  const newStatus: ScheduleStatus = existing.status === 'active' ? 'paused' : 'active'
   return db.maintenanceSchedule.update({
     where: { id },
     data: { status: newStatus },
