@@ -25,6 +25,8 @@ export async function POST(req: NextRequest) {
     const user = await acceptInvite(parsed.data)
     return NextResponse.json({ email: user.email }, { status: 201 })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 })
+    const SAFE_MESSAGES = new Set(['Invite expired or already used'])
+    const message = SAFE_MESSAGES.has(err.message) ? err.message : 'Could not accept invite'
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 }

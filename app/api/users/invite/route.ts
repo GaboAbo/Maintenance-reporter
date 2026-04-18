@@ -5,7 +5,7 @@ import { createInvite } from '@/lib/services/users'
 import type { UserRole } from '@prisma/client'
 
 const InviteSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().transform((e) => e.toLowerCase()),
   role: z.enum(['MANAGER', 'TECHNICIAN']),
 })
 

@@ -13,7 +13,7 @@ export async function createInvite({
 }) {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
   return db.inviteToken.create({
-    data: { tenantId, email, role, expiresAt },
+    data: { tenantId, email: email.toLowerCase(), role, expiresAt },
   })
 }
 
@@ -37,21 +37,22 @@ export async function acceptInvite({
 
   const hashed = await hashPassword(password)
 
-  const user = await db.user.create({
-    data: {
-      tenantId: invite.tenantId,
-      name,
-      email: invite.email,
-      password: hashed,
-      role: invite.role,
-      notificationPrefs: { create: { email: true, sms: false } },
-    },
-  })
-
-  await db.inviteToken.update({
-    where: { id: invite.id },
-    data: { usedAt: new Date() },
-  })
+  const [user] = await db.$transaction([
+    db.user.create({
+      data: {
+        tenantId: invite.tenantId,
+        name,
+        email: invite.email,
+        password: hashed,
+        role: invite.role,
+        notificationPrefs: { create: { email: true, sms: false } },
+      },
+    }),
+    db.inviteToken.update({
+      where: { id: invite.id },
+      data: { usedAt: new Date() },
+    }),
+  ])
 
   return user
 }
