@@ -6,6 +6,16 @@ describe('renderTemplate', () => {
     const t = renderTemplate('wo.assigned', { workOrderId: 'WO-1', workOrderDescription: 'Fix HVAC' })
     expect(t.subject).toContain('WO-1')
     expect(t.emailBody).toContain('WO-1')
+    expect(t.emailBody).toContain('Fix HVAC')
+    expect(t.smsBody).toBeTruthy()
+    expect(t.smsBody).toContain('WO-1')
+  })
+
+  it('renders wo.assigned without description', () => {
+    const t = renderTemplate('wo.assigned', { workOrderId: 'WO-1' })
+    expect(t.subject).toContain('WO-1')
+    expect(t.emailBody).toContain('WO-1')
+    expect(t.emailBody).not.toContain(': ')
     expect(t.smsBody).toBeTruthy()
   })
 
@@ -19,6 +29,7 @@ describe('renderTemplate', () => {
     expect(t.emailBody).toContain('OPEN')
     expect(t.emailBody).toContain('IN_PROGRESS')
     expect(t.smsBody).toBeTruthy()
+    expect(t.smsBody).toContain('WO-2')
   })
 
   it('renders wo.due_soon', () => {
@@ -29,6 +40,7 @@ describe('renderTemplate', () => {
     expect(t.subject).toContain('WO-3')
     expect(t.emailBody).toContain('WO-3')
     expect(t.smsBody).toBeTruthy()
+    expect(t.smsBody).toContain('WO-3')
   })
 
   it('renders wo.overdue', () => {
@@ -39,6 +51,7 @@ describe('renderTemplate', () => {
     expect(t.subject).toContain('WO-4')
     expect(t.emailBody).toContain('WO-4')
     expect(t.smsBody).toBeTruthy()
+    expect(t.smsBody).toContain('WO-4')
   })
 
   it('renders schedule.due_soon', () => {
@@ -49,6 +62,7 @@ describe('renderTemplate', () => {
     expect(t.subject).toContain('Monthly HVAC')
     expect(t.emailBody).toContain('Monthly HVAC')
     expect(t.smsBody).toBeTruthy()
+    expect(t.smsBody).toContain('Monthly HVAC')
   })
 
   it('renders schedule.overdue', () => {
@@ -59,5 +73,6 @@ describe('renderTemplate', () => {
     expect(t.subject).toContain('Quarterly Pump Check')
     expect(t.emailBody).toContain('Quarterly Pump Check')
     expect(t.smsBody).toBeTruthy()
+    expect(t.smsBody).toContain('Quarterly Pump Check')
   })
 })
