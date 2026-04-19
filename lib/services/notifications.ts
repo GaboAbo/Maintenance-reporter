@@ -22,6 +22,7 @@ export async function sendNotification(
     if (!user) return
 
     const prefs = user.notificationPrefs ?? { email: true, sms: false }
+    if (!prefs.email && !(prefs.sms && user.phone)) return
     const { subject, emailBody, smsBody } = renderTemplate(event, payload)
 
     if (prefs.email) {
