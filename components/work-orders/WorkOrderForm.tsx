@@ -25,29 +25,28 @@ export function WorkOrderForm() {
   const [users, setUsers] = useState<User[]>([])
   const [type, setType] = useState<WorkOrderType>('CORRECTIVE')
   const [priority, setPriority] = useState<Priority>('MEDIUM')
-  const [assignedToId, setAssignedToId] = useState<string>('')
+  const [assignedToId, setAssignedToId] = useState<string>('__none__')
   const [selectedAssetIds, setSelectedAssetIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/assets').then((r) => {
+    fetch('/api/assets')
+      .then((r) => {
         if (!r.ok) throw new Error('Failed to load assets')
         return r.json()
-      }),
-      fetch('/api/users').then((r) => {
-        if (!r.ok) throw new Error('Failed to load users')
-        return r.json()
-      }),
-    ])
-      .then(([a, u]) => {
-        setAssets(a)
-        setUsers(u)
+      })
+      .then((data) => {
+        setAssets(data)
         setAssetsLoaded(true)
       })
       .catch(() => {
-        setAssetsError('Failed to load data. Please refresh and try again.')
+        setAssetsError('Failed to load assets. Please refresh and try again.')
         setAssetsLoaded(true)
       })
+
+    fetch('/api/users')
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setUsers)
+      .catch(() => {})
   }, [])
 
   function toggleAsset(id: string) {
@@ -69,7 +68,7 @@ export function WorkOrderForm() {
       type,
       priority,
       description: (form.get('description') as string) || null,
-      assignedToId: assignedToId || null,
+      assignedToId: assignedToId === '__none__' ? null : assignedToId || null,
       dueDate: rawDueDate ? new Date(rawDueDate).toISOString() : null,
       assetIds: Array.from(selectedAssetIds),
     }
@@ -140,7 +139,7 @@ export function WorkOrderForm() {
               <SelectValue placeholder="Unassigned" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Unassigned</SelectItem>
+              <SelectItem value="__none__">Unassigned</SelectItem>
               {users.map((u) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.name}

@@ -5,6 +5,9 @@ import { getTenantId } from '@/lib/tenant'
 import { listWorkOrders } from '@/lib/services/workOrders'
 import type { WorkOrderStatus, WorkOrderType } from '@prisma/client'
 
+const VALID_STATUSES = new Set<WorkOrderStatus>(['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'])
+const VALID_TYPES = new Set<WorkOrderType>(['PREVENTIVE', 'CORRECTIVE'])
+
 export default async function WorkOrdersPage({
   searchParams,
 }: {
@@ -12,9 +15,13 @@ export default async function WorkOrdersPage({
 }) {
   const { status, type } = await searchParams
   const tenantId = await getTenantId()
+
+  const validStatus = status && VALID_STATUSES.has(status as WorkOrderStatus) ? (status as WorkOrderStatus) : undefined
+  const validType = type && VALID_TYPES.has(type as WorkOrderType) ? (type as WorkOrderType) : undefined
+
   const workOrders = await listWorkOrders(tenantId, {
-    status: status as WorkOrderStatus | undefined,
-    type: type as WorkOrderType | undefined,
+    status: validStatus,
+    type: validType,
   })
 
   return (

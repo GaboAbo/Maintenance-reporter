@@ -36,7 +36,7 @@ export function WorkOrderTable({ workOrders }: { workOrders: WorkOrderRow[] }) {
           <TableRow key={wo.id}>
             <TableCell>
               <Link href={`/work-orders/${wo.id}`} className="font-medium hover:underline capitalize">
-                {wo.type.toLowerCase().replace('_', ' ')}
+                {wo.type.toLowerCase().replaceAll('_', ' ')}
               </Link>
               {wo.description && (
                 <div className="text-xs text-zinc-400 max-w-48 truncate">{wo.description}</div>
