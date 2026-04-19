@@ -2,10 +2,11 @@ import { getSessionUser } from '@/lib/tenant'
 import { getTenantDashboardStats, getTechnicianDashboardStats } from '@/lib/services/reports'
 import { TenantStats } from '@/components/dashboard/TenantStats'
 import { TechnicianStats } from '@/components/dashboard/TechnicianStats'
+import type { UserRole } from '@prisma/client'
 
 export default async function DashboardPage() {
   const user = await getSessionUser()
-  const isManager = (['ADMIN', 'MANAGER'] as const).includes(user.role)
+  const isManager = (['ADMIN', 'MANAGER'] as UserRole[]).includes(user.role)
 
   const [tenantStats, techStats] = await Promise.all([
     isManager ? getTenantDashboardStats(user.tenantId) : Promise.resolve(null),

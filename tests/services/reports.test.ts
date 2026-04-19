@@ -105,6 +105,19 @@ describe('getTenantDashboardStats', () => {
     expect(stats.avgResolutionTimeHours).toBeNull()
   })
 
+  it('excludes null completedAt records from both numerator and denominator', async () => {
+    const t0 = new Date('2026-01-01T00:00:00Z')
+    const t1 = new Date('2026-01-01T10:00:00Z')
+    setupMocks({
+      completedWOs: [
+        { createdAt: t0, completedAt: t1 },   // 10 hours
+        { createdAt: t0, completedAt: null },   // excluded
+      ],
+    })
+    const stats = await getTenantDashboardStats('t1')
+    expect(stats.avgResolutionTimeHours).toBe(10) // not 5
+  })
+
   it('returns active and overdue schedule counts', async () => {
     setupMocks({ activeSchedules: 5, overdueSchedules: 2 })
     const stats = await getTenantDashboardStats('t1')
