@@ -1,8 +1,33 @@
-export default function DashboardPage() {
+import { getSessionUser } from '@/lib/tenant'
+import { getTenantDashboardStats, getTechnicianDashboardStats } from '@/lib/services/reports'
+import { TenantStats } from '@/components/dashboard/TenantStats'
+import { TechnicianStats } from '@/components/dashboard/TechnicianStats'
+
+export default async function DashboardPage() {
+  const user = await getSessionUser()
+  const isManager = user.role === 'ADMIN' || user.role === 'MANAGER'
+
+  const [tenantStats, techStats] = await Promise.all([
+    isManager ? getTenantDashboardStats(user.tenantId) : Promise.resolve(null),
+    getTechnicianDashboardStats(user.tenantId, user.id),
+  ])
+
   return (
-    <div>
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-      <p className="mt-2 text-sm text-zinc-500">Asset health overview coming in Plan 3.</p>
+    <div className="flex flex-col gap-8">
+      <div>
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+      </div>
+
+      {isManager && tenantStats && (
+        <section className="flex flex-col gap-4">
+          <h2 className="text-lg font-medium">Team Overview</h2>
+          <TenantStats stats={tenantStats} />
+        </section>
+      )}
+
+      <section>
+        <TechnicianStats stats={techStats} heading="Your Stats" />
+      </section>
     </div>
   )
 }
