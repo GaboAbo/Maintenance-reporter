@@ -12,6 +12,11 @@ type Item = {
   asset: { id: string; name: string }
 }
 
+const STATUS_SEQUENCE: Record<string, string> = {
+  open: 'in_progress',
+  in_progress: 'completed',
+}
+
 export function WorkOrderItemList({
   workOrderId,
   items,
@@ -28,20 +33,16 @@ export function WorkOrderItemList({
   async function updateItem(itemId: string, data: { status?: string; notes?: string }) {
     setSaving(itemId)
     try {
-      await fetch(`/api/work-orders/${workOrderId}/items/${itemId}`, {
+      const res = await fetch(`/api/work-orders/${workOrderId}/items/${itemId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
+      if (!res.ok) return
       router.refresh()
     } finally {
       setSaving(null)
     }
-  }
-
-  const STATUS_SEQUENCE: Record<string, string> = {
-    open: 'in_progress',
-    in_progress: 'completed',
   }
 
   return (
@@ -60,7 +61,7 @@ export function WorkOrderItemList({
                     : 'text-zinc-500'
                 }`}
               >
-                {item.status.replace('_', ' ')}
+                {item.status.replaceAll('_', ' ')}
               </span>
             </div>
             {STATUS_SEQUENCE[item.status] && (

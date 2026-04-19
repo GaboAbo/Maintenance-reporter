@@ -83,7 +83,7 @@ export default async function WorkOrderDetailPage({
                   <span className="text-zinc-500">
                     {' '}
                     {activity.eventType === 'STATUS_CHANGED'
-                      ? `changed status from ${(activity.payload as any).from} to ${(activity.payload as any).to}`
+                      ? `changed status from ${(activity.payload as { from: string; to: string }).from} to ${(activity.payload as { from: string; to: string }).to}`
                       : activity.eventType === 'CREATED'
                       ? 'created this work order'
                       : activity.eventType === 'ITEM_UPDATED'
