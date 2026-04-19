@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { sendNotification } from '@/lib/services/notifications'
 
 function advanceDueDate(
   current: Date,
@@ -28,7 +29,9 @@ function advanceDueDate(
 
 export async function runPmCheck(): Promise<{ generated: number }> {
   const now = new Date()
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
 
+  // ── WO generation pass ────────────────────────────────────────────────────
   const dueSchedules = await db.maintenanceSchedule.findMany({
     where: { status: 'active', triggerType: 'time_based', nextDueDate: { lte: now } },
     include: { assets: { select: { assetId: true } } },
@@ -68,6 +71,97 @@ export async function runPmCheck(): Promise<{ generated: number }> {
       generated++
     } catch (err) {
       console.error(`[pm-check] Failed to process schedule ${schedule.id}:`, err)
+    }
+  }
+
+  // ── WO due_soon notifications ─────────────────────────────────────────────
+  const dueSoonWOs = await db.workOrder.findMany({
+    where: {
+      status: { in: ['OPEN', 'IN_PROGRESS'] },
+      dueDate: { gt: now, lte: tomorrow },
+      assignedToId: { not: null },
+    },
+    select: { id: true, assignedToId: true, dueDate: true },
+  })
+  for (const wo of dueSoonWOs) {
+    await sendNotification(wo.assignedToId!, 'wo.due_soon', {
+      workOrderId: wo.id,
+      dueDate: wo.dueDate!.toISOString(),
+    })
+  }
+
+  // ── WO overdue notifications ──────────────────────────────────────────────
+  const overdueWOs = await db.workOrder.findMany({
+    where: {
+      status: { in: ['OPEN', 'IN_PROGRESS'] },
+      dueDate: { lt: now },
+      assignedToId: { not: null },
+    },
+    select: { id: true, tenantId: true, assignedToId: true, dueDate: true },
+  })
+  for (const wo of overdueWOs) {
+    await sendNotification(wo.assignedToId!, 'wo.overdue', {
+      workOrderId: wo.id,
+      dueDate: wo.dueDate!.toISOString(),
+    })
+    const admins = await db.user.findMany({
+      where: {
+        tenantId: wo.tenantId,
+        role: { in: ['ADMIN', 'MANAGER'] },
+        active: true,
+        NOT: { id: wo.assignedToId! },
+      },
+      select: { id: true },
+    })
+    for (const admin of admins) {
+      await sendNotification(admin.id, 'wo.overdue', {
+        workOrderId: wo.id,
+        dueDate: wo.dueDate!.toISOString(),
+      })
+    }
+  }
+
+  // ── Schedule due_soon notifications ───────────────────────────────────────
+  const dueSoonSchedules = await db.maintenanceSchedule.findMany({
+    where: {
+      status: 'active',
+      triggerType: 'time_based',
+      nextDueDate: { gt: now, lte: tomorrow },
+    },
+    select: { id: true, tenantId: true, name: true, nextDueDate: true },
+  })
+  for (const schedule of dueSoonSchedules) {
+    const admins = await db.user.findMany({
+      where: { tenantId: schedule.tenantId, role: { in: ['ADMIN', 'MANAGER'] }, active: true },
+      select: { id: true },
+    })
+    for (const admin of admins) {
+      await sendNotification(admin.id, 'schedule.due_soon', {
+        scheduleName: schedule.name,
+        dueDate: schedule.nextDueDate.toISOString(),
+      })
+    }
+  }
+
+  // ── Schedule overdue notifications ────────────────────────────────────────
+  const overdueSchedules = await db.maintenanceSchedule.findMany({
+    where: {
+      status: 'active',
+      triggerType: 'time_based',
+      nextDueDate: { lt: now },
+    },
+    select: { id: true, tenantId: true, name: true, nextDueDate: true },
+  })
+  for (const schedule of overdueSchedules) {
+    const admins = await db.user.findMany({
+      where: { tenantId: schedule.tenantId, role: { in: ['ADMIN', 'MANAGER'] }, active: true },
+      select: { id: true },
+    })
+    for (const admin of admins) {
+      await sendNotification(admin.id, 'schedule.overdue', {
+        scheduleName: schedule.name,
+        dueDate: schedule.nextDueDate.toISOString(),
+      })
     }
   }
 
