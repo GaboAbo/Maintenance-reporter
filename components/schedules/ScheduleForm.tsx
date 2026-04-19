@@ -123,7 +123,11 @@ export function ScheduleForm({ schedule }: ScheduleFormProps) {
           <Label>Trigger type</Label>
           <Select
             value={triggerType}
-            onValueChange={(v) => setTriggerType(v as TriggerType)}
+            onValueChange={(v) => {
+              const next = v as TriggerType
+              setTriggerType(next)
+              if (next === 'usage_based') setIntervalUnit('days')
+            }}
           >
             <SelectTrigger>
               <SelectValue />
@@ -209,7 +213,7 @@ export function ScheduleForm({ schedule }: ScheduleFormProps) {
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-3">
-        <Button type="submit" disabled={loading || selectedAssetIds.size === 0 || !!assetsError}>
+        <Button type="submit" disabled={loading || !assetsLoaded || selectedAssetIds.size === 0 || !!assetsError}>
           {loading ? 'Saving…' : schedule ? 'Update schedule' : 'Create schedule'}
         </Button>
         <Button
