@@ -64,3 +64,18 @@ export async function listUsers(tenantId: string) {
     orderBy: { name: 'asc' },
   })
 }
+
+export async function listUsersWithPrefs(tenantId: string) {
+  return db.user.findMany({
+    where: { tenantId, active: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      phone: true,
+      notificationPrefs: { select: { email: true, sms: true } },
+    },
+    orderBy: { name: 'asc' },
+  })
+}
