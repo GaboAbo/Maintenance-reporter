@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { sendNotification } from '@/lib/services/notifications'
 import type { WorkOrderStatus, WorkOrderType, Priority } from '@prisma/client'
 
 type WorkOrderInput = {
@@ -81,7 +82,7 @@ export async function createWorkOrder(
 ) {
   const { assetIds, ...rest } = data
   await assertAssetsOwnedByTenant(tenantId, assetIds)
-  return db.workOrder.create({
+  const wo = await db.workOrder.create({
     data: {
       ...rest,
       tenantId,
@@ -97,6 +98,15 @@ export async function createWorkOrder(
       },
     },
   })
+
+  if (wo.assignedToId) {
+    await sendNotification(wo.assignedToId, 'wo.assigned', {
+      workOrderId: wo.id,
+      workOrderDescription: wo.description ?? undefined,
+    })
+  }
+
+  return wo
 }
 
 export async function updateWorkOrder(
@@ -119,6 +129,15 @@ export async function updateWorkOrder(
     },
   })
 
+  const assigneeChanged =
+    data.assignedToId !== undefined &&
+    data.assignedToId !== null &&
+    data.assignedToId !== existing.assignedToId
+
+  if (assigneeChanged) {
+    await sendNotification(data.assignedToId!, 'wo.assigned', { workOrderId: id })
+  }
+
   if (data.status && data.status !== existing.status) {
     await db.workOrderActivity.create({
       data: {
@@ -128,6 +147,27 @@ export async function updateWorkOrder(
         payload: { from: existing.status, to: data.status },
       },
     })
+
+    if (updated.assignedToId) {
+      await sendNotification(updated.assignedToId, 'wo.status_changed', {
+        workOrderId: id,
+        fromStatus: existing.status,
+        toStatus: data.status,
+      })
+    }
+
+    const createdActivity = await db.workOrderActivity.findFirst({
+      where: { workOrderId: id, eventType: 'CREATED' },
+      orderBy: { createdAt: 'asc' },
+      select: { userId: true },
+    })
+    if (createdActivity && createdActivity.userId !== updated.assignedToId) {
+      await sendNotification(createdActivity.userId, 'wo.status_changed', {
+        workOrderId: id,
+        fromStatus: existing.status,
+        toStatus: data.status,
+      })
+    }
   }
 
   return updated

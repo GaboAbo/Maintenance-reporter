@@ -14,11 +14,16 @@ vi.mock('@/lib/db', () => ({
     },
     workOrderActivity: {
       create: vi.fn(),
+      findFirst: vi.fn(),
     },
     asset: {
       findMany: vi.fn(),
     },
   },
+}))
+
+vi.mock('@/lib/services/notifications', () => ({
+  sendNotification: vi.fn(),
 }))
 
 import { db } from '@/lib/db'
@@ -30,6 +35,7 @@ import {
   updateWorkOrderItem,
   cancelWorkOrder,
 } from '@/lib/services/workOrders'
+import { sendNotification } from '@/lib/services/notifications'
 
 const TENANT = 't1'
 const USER = 'u1'
@@ -223,5 +229,70 @@ describe('cancelWorkOrder', () => {
     await cancelWorkOrder(TENANT, 'w1', USER)
     expect(db.workOrder.update).not.toHaveBeenCalled()
     expect(db.workOrderActivity.create).not.toHaveBeenCalled()
+  })
+})
+
+describe('createWorkOrder — notifications', () => {
+  it('sends wo.assigned when assignedToId is set', async () => {
+    vi.mocked(db.asset.findMany).mockResolvedValue([{ id: 'a1' }] as any)
+    vi.mocked(db.workOrder.create).mockResolvedValue({ id: 'w1', assignedToId: 'u2' } as any)
+    await createWorkOrder(TENANT, USER, { type: 'CORRECTIVE', assetIds: ['a1'], assignedToId: 'u2' })
+    expect(sendNotification).toHaveBeenCalledWith('u2', 'wo.assigned', expect.objectContaining({ workOrderId: 'w1' }))
+  })
+
+  it('does not send wo.assigned when no assignedToId', async () => {
+    vi.mocked(db.asset.findMany).mockResolvedValue([{ id: 'a1' }] as any)
+    vi.mocked(db.workOrder.create).mockResolvedValue({ id: 'w1', assignedToId: null } as any)
+    await createWorkOrder(TENANT, USER, { type: 'CORRECTIVE', assetIds: ['a1'] })
+    expect(sendNotification).not.toHaveBeenCalled()
+  })
+})
+
+describe('updateWorkOrder — notifications', () => {
+  it('sends wo.assigned when assignedToId changes', async () => {
+    vi.mocked(db.workOrder.findFirst).mockResolvedValue({ id: 'w1', status: 'OPEN', assignedToId: null } as any)
+    vi.mocked(db.workOrder.update).mockResolvedValue({ id: 'w1', status: 'OPEN', assignedToId: 'u2' } as any)
+    vi.mocked(db.workOrderActivity.create).mockResolvedValue({} as any)
+    await updateWorkOrder(TENANT, 'w1', USER, { assignedToId: 'u2' })
+    expect(sendNotification).toHaveBeenCalledWith('u2', 'wo.assigned', expect.objectContaining({ workOrderId: 'w1' }))
+  })
+
+  it('does not send wo.assigned when assignedToId is unchanged', async () => {
+    vi.mocked(db.workOrder.findFirst).mockResolvedValue({ id: 'w1', status: 'OPEN', assignedToId: 'u2' } as any)
+    vi.mocked(db.workOrder.update).mockResolvedValue({ id: 'w1', status: 'OPEN', assignedToId: 'u2' } as any)
+    await updateWorkOrder(TENANT, 'w1', USER, { assignedToId: 'u2' })
+    expect(sendNotification).not.toHaveBeenCalledWith('u2', 'wo.assigned', expect.anything())
+  })
+
+  it('sends wo.status_changed to assignee when status changes', async () => {
+    vi.mocked(db.workOrder.findFirst).mockResolvedValue({ id: 'w1', status: 'OPEN', assignedToId: 'u2' } as any)
+    vi.mocked(db.workOrder.update).mockResolvedValue({ id: 'w1', status: 'IN_PROGRESS', assignedToId: 'u2' } as any)
+    vi.mocked(db.workOrderActivity.create).mockResolvedValue({} as any)
+    vi.mocked(db.workOrderActivity.findFirst).mockResolvedValue({ userId: 'u3' } as any)
+    await updateWorkOrder(TENANT, 'w1', USER, { status: 'IN_PROGRESS' })
+    expect(sendNotification).toHaveBeenCalledWith('u2', 'wo.status_changed', expect.objectContaining({
+      workOrderId: 'w1',
+      fromStatus: 'OPEN',
+      toStatus: 'IN_PROGRESS',
+    }))
+  })
+
+  it('also notifies the creator when creator differs from assignee on status change', async () => {
+    vi.mocked(db.workOrder.findFirst).mockResolvedValue({ id: 'w1', status: 'OPEN', assignedToId: 'u2' } as any)
+    vi.mocked(db.workOrder.update).mockResolvedValue({ id: 'w1', status: 'IN_PROGRESS', assignedToId: 'u2' } as any)
+    vi.mocked(db.workOrderActivity.create).mockResolvedValue({} as any)
+    vi.mocked(db.workOrderActivity.findFirst).mockResolvedValue({ userId: 'u3' } as any)
+    await updateWorkOrder(TENANT, 'w1', USER, { status: 'IN_PROGRESS' })
+    expect(sendNotification).toHaveBeenCalledWith('u3', 'wo.status_changed', expect.objectContaining({ workOrderId: 'w1' }))
+  })
+
+  it('does not double-notify creator when creator is same as assignee', async () => {
+    vi.mocked(db.workOrder.findFirst).mockResolvedValue({ id: 'w1', status: 'OPEN', assignedToId: 'u2' } as any)
+    vi.mocked(db.workOrder.update).mockResolvedValue({ id: 'w1', status: 'IN_PROGRESS', assignedToId: 'u2' } as any)
+    vi.mocked(db.workOrderActivity.create).mockResolvedValue({} as any)
+    vi.mocked(db.workOrderActivity.findFirst).mockResolvedValue({ userId: 'u2' } as any)
+    await updateWorkOrder(TENANT, 'w1', USER, { status: 'IN_PROGRESS' })
+    const calls = vi.mocked(sendNotification).mock.calls.filter(([uid, event]) => uid === 'u2' && event === 'wo.status_changed')
+    expect(calls).toHaveLength(1)
   })
 })
