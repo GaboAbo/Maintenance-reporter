@@ -1,6 +1,30 @@
-import type { Asset, AssetStatus, User, UserRole, WorkOrder, WorkOrderStatus, Priority, WorkOrderType } from '@prisma/client'
+import type {
+  Asset,
+  AssetStatus,
+  User,
+  UserRole,
+  WorkOrder,
+  WorkOrderStatus,
+  WorkOrderType,
+  Priority,
+  MaintenanceSchedule,
+  WorkOrderItem,
+  WorkOrderActivity,
+} from '@prisma/client'
 
-export type { Asset, AssetStatus, User, UserRole, WorkOrder, WorkOrderStatus, Priority, WorkOrderType }
+export type {
+  Asset,
+  AssetStatus,
+  User,
+  UserRole,
+  WorkOrder,
+  WorkOrderStatus,
+  WorkOrderType,
+  Priority,
+  MaintenanceSchedule,
+  WorkOrderItem,
+  WorkOrderActivity,
+}
 
 export type SessionUser = {
   id: string
