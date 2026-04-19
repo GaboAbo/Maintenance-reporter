@@ -1,15 +1,9 @@
 import { StatCard } from './StatCard'
 import type { TenantDashboardStats } from '@/lib/services/reports'
+import { STATUS_LABELS, TYPE_LABELS } from '@/lib/constants/workOrders'
 
 type Props = {
   stats: TenantDashboardStats
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  OPEN: 'Open',
-  IN_PROGRESS: 'In progress',
-  COMPLETED: 'Completed',
-  CANCELLED: 'Cancelled',
 }
 
 export function TenantStats({ stats }: Props) {
@@ -60,7 +54,7 @@ export function TenantStats({ stats }: Props) {
             <tbody className="divide-y">
               {(['PREVENTIVE', 'CORRECTIVE'] as const).map((type) => (
                 <tr key={type} className="hover:bg-zinc-50">
-                  <td className="px-4 py-3 text-zinc-700 capitalize">{type.toLowerCase()}</td>
+                  <td className="px-4 py-3 text-zinc-700">{TYPE_LABELS[type]}</td>
                   <td className="px-4 py-3 text-right">{stats.byType[type]}</td>
                 </tr>
               ))}

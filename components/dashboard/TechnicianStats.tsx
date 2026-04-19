@@ -1,16 +1,10 @@
 import { StatCard } from './StatCard'
 import type { TechnicianDashboardStats } from '@/lib/services/reports'
+import { STATUS_LABELS } from '@/lib/constants/workOrders'
 
 type Props = {
   stats: TechnicianDashboardStats
   heading?: string
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  OPEN: 'Open',
-  IN_PROGRESS: 'In progress',
-  COMPLETED: 'Completed',
-  CANCELLED: 'Cancelled',
 }
 
 export function TechnicianStats({ stats, heading = 'Your Stats' }: Props) {
