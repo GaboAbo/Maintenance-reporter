@@ -81,7 +81,7 @@ export function ScheduleForm({ schedule }: ScheduleFormProps) {
       triggerType,
       intervalValue: Number(form.get('intervalValue')),
       intervalUnit: triggerType === 'time_based' ? intervalUnit : null,
-      nextDueDate: new Date(form.get('nextDueDate') as string).toISOString(),
+      nextDueDate: new Date(`${form.get('nextDueDate') as string}T00:00:00`).toISOString(),
       assetIds: Array.from(selectedAssetIds),
     }
 

@@ -26,19 +26,24 @@ export function WorkOrderItemList({
 }) {
   const router = useRouter()
   const [saving, setSaving] = useState<string | null>(null)
+  const [itemError, setItemError] = useState<string | null>(null)
   const [notes, setNotes] = useState<Record<string, string>>(
     Object.fromEntries(items.map((i) => [i.id, i.notes ?? '']))
   )
 
   async function updateItem(itemId: string, data: { status?: string; notes?: string }) {
     setSaving(itemId)
+    setItemError(null)
     try {
       const res = await fetch(`/api/work-orders/${workOrderId}/items/${itemId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      if (!res.ok) return
+      if (!res.ok) {
+        setItemError('Failed to save. Please try again.')
+        return
+      }
       router.refresh()
     } finally {
       setSaving(null)
@@ -47,6 +52,9 @@ export function WorkOrderItemList({
 
   return (
     <div className="flex flex-col gap-4">
+      {itemError && (
+        <p className="text-sm text-red-600">{itemError}</p>
+      )}
       {items.map((item) => (
         <div key={item.id} className="rounded-lg border bg-white p-4">
           <div className="mb-3 flex items-center justify-between">
