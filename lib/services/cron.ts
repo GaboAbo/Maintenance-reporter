@@ -99,25 +99,32 @@ export async function runPmCheck(): Promise<{ generated: number }> {
     },
     select: { id: true, tenantId: true, assignedToId: true, dueDate: true },
   })
-  for (const wo of overdueWOs) {
-    await sendNotification(wo.assignedToId!, 'wo.overdue', {
-      workOrderId: wo.id,
-      dueDate: wo.dueDate!.toISOString(),
-    })
-    const admins = await db.user.findMany({
-      where: {
-        tenantId: wo.tenantId,
-        role: { in: ['ADMIN', 'MANAGER'] },
-        active: true,
-        NOT: { id: wo.assignedToId! },
-      },
-      select: { id: true },
-    })
-    for (const admin of admins) {
-      await sendNotification(admin.id, 'wo.overdue', {
+
+  if (overdueWOs.length > 0) {
+    const tenantIds = [...new Set(overdueWOs.map((wo) => wo.tenantId))]
+    const adminsByTenant = new Map<string, string[]>()
+    for (const tenantId of tenantIds) {
+      const admins = await db.user.findMany({
+        where: { tenantId, role: { in: ['ADMIN', 'MANAGER'] }, active: true },
+        select: { id: true },
+      })
+      adminsByTenant.set(tenantId, admins.map((a) => a.id))
+    }
+
+    for (const wo of overdueWOs) {
+      await sendNotification(wo.assignedToId!, 'wo.overdue', {
         workOrderId: wo.id,
         dueDate: wo.dueDate!.toISOString(),
       })
+      const adminIds = adminsByTenant.get(wo.tenantId) ?? []
+      for (const adminId of adminIds) {
+        if (adminId !== wo.assignedToId) {
+          await sendNotification(adminId, 'wo.overdue', {
+            workOrderId: wo.id,
+            dueDate: wo.dueDate!.toISOString(),
+          })
+        }
+      }
     }
   }
 

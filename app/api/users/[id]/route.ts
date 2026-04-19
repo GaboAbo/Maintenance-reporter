@@ -5,7 +5,7 @@ import { getSessionUser } from '@/lib/tenant'
 
 const UpdateUserSchema = z.object({
   name: z.string().min(1).optional(),
-  phone: z.string().nullable().optional(),
+  phone: z.string().regex(/^\+[1-9]\d{7,14}$/, 'Phone must be in E.164 format (e.g. +15550001234)').nullable().optional(),
 })
 
 export async function PATCH(
