@@ -22,7 +22,10 @@ function computeAvgResolutionHours(
   wos: Array<{ createdAt: Date; completedAt: Date | null }>
 ): number | null {
   if (wos.length === 0) return null
-  const totalMs = wos.reduce((sum, wo) => sum + (wo.completedAt!.getTime() - wo.createdAt.getTime()), 0)
+  const totalMs = wos.reduce((sum, wo) => {
+    if (!wo.completedAt) return sum
+    return sum + (wo.completedAt.getTime() - wo.createdAt.getTime())
+  }, 0)
   return Math.round((totalMs / wos.length / 3_600_000) * 10) / 10
 }
 
