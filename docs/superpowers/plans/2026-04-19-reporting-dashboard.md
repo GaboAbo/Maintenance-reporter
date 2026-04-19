@@ -573,7 +573,7 @@ export default async function DashboardPage() {
       )}
 
       <section>
-        <TechnicianStats stats={techStats} heading={isManager ? 'Your Stats' : 'Your Stats'} />
+        <TechnicianStats stats={techStats} heading="Your Stats" />
       </section>
     </div>
   )
