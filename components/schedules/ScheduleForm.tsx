@@ -34,6 +34,8 @@ export function ScheduleForm({ schedule }: ScheduleFormProps) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [assets, setAssets] = useState<Asset[]>([])
+  const [assetsLoaded, setAssetsLoaded] = useState(false)
+  const [assetsError, setAssetsError] = useState('')
   const [triggerType, setTriggerType] = useState<TriggerType>(
     (schedule?.triggerType as TriggerType) ?? 'time_based'
   )
@@ -46,9 +48,18 @@ export function ScheduleForm({ schedule }: ScheduleFormProps) {
 
   useEffect(() => {
     fetch('/api/assets')
-      .then((r) => r.json())
-      .then(setAssets)
-      .catch(() => {})
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load assets')
+        return r.json()
+      })
+      .then((data) => {
+        setAssets(data)
+        setAssetsLoaded(true)
+      })
+      .catch(() => {
+        setAssetsError('Failed to load assets. Please refresh and try again.')
+        setAssetsLoaded(true)
+      })
   }, [])
 
   function toggleAsset(id: string) {
@@ -169,8 +180,12 @@ export function ScheduleForm({ schedule }: ScheduleFormProps) {
       </div>
       <div className="flex flex-col gap-1.5">
         <Label>Assets *</Label>
-        {assets.length === 0 ? (
+        {!assetsLoaded ? (
           <p className="text-sm text-zinc-400">Loading assets…</p>
+        ) : assetsError ? (
+          <p className="text-sm text-red-600">{assetsError}</p>
+        ) : assets.length === 0 ? (
+          <p className="text-sm text-zinc-400">No assets found. Create an asset first.</p>
         ) : (
           <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto rounded-md border p-3">
             {assets.map((asset) => (
@@ -194,7 +209,7 @@ export function ScheduleForm({ schedule }: ScheduleFormProps) {
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-3">
-        <Button type="submit" disabled={loading || selectedAssetIds.size === 0}>
+        <Button type="submit" disabled={loading || selectedAssetIds.size === 0 || !!assetsError}>
           {loading ? 'Saving…' : schedule ? 'Update schedule' : 'Create schedule'}
         </Button>
         <Button

@@ -37,7 +37,7 @@ export default async function ScheduleDetailPage({
 
       <div className="grid grid-cols-2 gap-4 rounded-lg border bg-white p-4 text-sm md:grid-cols-3">
         {[
-          ['Trigger type', schedule.triggerType.replace('_', ' ')],
+          ['Trigger type', schedule.triggerType.replaceAll('_', ' ')],
           [
             'Next due',
             new Date(schedule.nextDueDate).toLocaleDateString(),
