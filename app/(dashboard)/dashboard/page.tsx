@@ -5,7 +5,7 @@ import { TechnicianStats } from '@/components/dashboard/TechnicianStats'
 
 export default async function DashboardPage() {
   const user = await getSessionUser()
-  const isManager = user.role === 'ADMIN' || user.role === 'MANAGER'
+  const isManager = (['ADMIN', 'MANAGER'] as const).includes(user.role)
 
   const [tenantStats, techStats] = await Promise.all([
     isManager ? getTenantDashboardStats(user.tenantId) : Promise.resolve(null),
