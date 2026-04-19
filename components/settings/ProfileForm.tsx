@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,6 +17,7 @@ type Props = {
 }
 
 export function ProfileForm({ user }: Props) {
+  const router = useRouter()
   const prefs = user.notificationPrefs ?? { email: true, sms: false }
   const [name, setName] = useState(user.name)
   const [phone, setPhone] = useState(user.phone ?? '')
@@ -28,18 +30,21 @@ export function ProfileForm({ user }: Props) {
     setSaving(true)
     setMessage('')
     try {
-      const profileRes = await fetch(`/api/users/${user.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone: phone || null }),
-      })
-      const prefsRes = await fetch(`/api/users/${user.id}/notification-prefs`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailPref, sms: smsPref }),
-      })
+      const [profileRes, prefsRes] = await Promise.all([
+        fetch(`/api/users/${user.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone: phone || null }),
+        }),
+        fetch(`/api/users/${user.id}/notification-prefs`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailPref, sms: smsPref }),
+        }),
+      ])
       if (profileRes.ok && prefsRes.ok) {
         setMessage('Saved.')
+        router.refresh()
       } else {
         setMessage('Failed to save. Please try again.')
       }
@@ -104,7 +109,11 @@ export function ProfileForm({ user }: Props) {
         <Button onClick={handleSave} disabled={saving}>
           {saving ? 'Saving…' : 'Save changes'}
         </Button>
-        {message && <p className="text-sm text-zinc-500">{message}</p>}
+        {message && (
+          <p className={`text-sm ${message === 'Saved.' ? 'text-zinc-500' : 'text-red-600'}`}>
+            {message}
+          </p>
+        )}
       </div>
     </div>
   )

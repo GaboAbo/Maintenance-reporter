@@ -15,5 +15,6 @@ export default async function SettingsPage() {
     },
   })
 
-  return <ProfileForm user={user!} />
+  if (!user) throw new Error('User not found')
+  return <ProfileForm user={user} />
 }
