@@ -6,17 +6,32 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { Asset, AssetStatus } from '@prisma/client'
+import type { AssetStatus } from '@prisma/client'
 
-type AssetFormProps = {
-  asset?: Asset
+type Category = { id: string; name: string }
+
+type AssetFormAsset = {
+  id: string
+  name: string
+  serialNumber?: string | null
+  model?: string | null
+  manufacturer?: string | null
+  location?: string | null
+  categoryId?: string | null
+  status: AssetStatus
 }
 
-export function AssetForm({ asset }: AssetFormProps) {
+type AssetFormProps = {
+  asset?: AssetFormAsset
+  categories: Category[]
+}
+
+export function AssetForm({ asset, categories }: AssetFormProps) {
   const router = useRouter()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<AssetStatus>(asset?.status ?? 'ACTIVE')
+  const [categoryId, setCategoryId] = useState<string>(asset?.categoryId ?? '')
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -30,7 +45,7 @@ export function AssetForm({ asset }: AssetFormProps) {
       model: form.get('model') || null,
       manufacturer: form.get('manufacturer') || null,
       location: form.get('location') || null,
-      category: form.get('category') || null,
+      categoryId: categoryId || null,
       status,
     }
 
@@ -86,7 +101,19 @@ export function AssetForm({ asset }: AssetFormProps) {
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="category">Category</Label>
-          <Input id="category" name="category" defaultValue={asset?.category ?? ''} />
+          <Select value={categoryId} onValueChange={setCategoryId}>
+            <SelectTrigger id="category">
+              <SelectValue placeholder="No category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">No category</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
