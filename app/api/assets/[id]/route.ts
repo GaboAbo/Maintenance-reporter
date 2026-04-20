@@ -9,7 +9,7 @@ const UpdateAssetSchema = z.object({
   model: z.string().optional().nullable(),
   manufacturer: z.string().optional().nullable(),
   location: z.string().optional().nullable(),
-  category: z.string().optional().nullable(),
+  categoryId: z.string().optional().nullable(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'DECOMMISSIONED']).optional(),
   installationDate: z.string().datetime().optional().nullable(),
   warrantyExpiry: z.string().datetime().optional().nullable(),

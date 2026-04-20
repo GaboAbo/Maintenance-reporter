@@ -7,7 +7,7 @@ type AssetInput = {
   model?: string | null
   manufacturer?: string | null
   location?: string | null
-  category?: string | null
+  categoryId?: string | null
   status?: AssetStatus
   installationDate?: Date | null
   warrantyExpiry?: Date | null
@@ -19,6 +19,7 @@ export async function listAssets(tenantId: string) {
     orderBy: { name: 'asc' },
     include: {
       _count: { select: { workOrderItems: true } },
+      category: { select: { id: true, name: true } },
     },
   })
 }
@@ -27,6 +28,7 @@ export async function getAsset(tenantId: string, id: string) {
   return db.asset.findFirst({
     where: { id, tenantId },
     include: {
+      category: { select: { id: true, name: true } },
       workOrderItems: {
         include: { workOrder: { select: { id: true, type: true, status: true, createdAt: true } } },
         orderBy: { workOrder: { createdAt: 'desc' } },
