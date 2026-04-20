@@ -19,13 +19,15 @@ const db = createClient()
 const SYSTEM_CATEGORIES = ['HVAC', 'Electrical', 'Plumbing', 'Equipment', 'Vehicle', 'Other']
 
 async function main() {
+  let inserted = 0
   for (const name of SYSTEM_CATEGORIES) {
     const existing = await db.assetCategory.findFirst({ where: { isSystem: true, name } })
     if (!existing) {
       await db.assetCategory.create({ data: { name, isSystem: true } })
+      inserted++
     }
   }
-  console.log(`Seeded ${SYSTEM_CATEGORIES.length} system asset categories`)
+  console.log(`Seeded ${inserted} system asset categories (${SYSTEM_CATEGORIES.length - inserted} already existed)`)
 }
 
 main().catch(console.error).finally(() => db.$disconnect())
