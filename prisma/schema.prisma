@@ -18,6 +18,7 @@ model Tenant {
   workOrders           WorkOrder[]
   inviteTokens         InviteToken[]
   subscription         Subscription?
+  assetCategories      AssetCategory[]
 }
 
 enum UserRole {
@@ -83,7 +84,8 @@ model Asset {
   model            String?
   manufacturer     String?
   location         String?
-  category         String?
+  categoryId       String?
+  category         AssetCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   status           AssetStatus @default(ACTIVE)
   installationDate DateTime?
   warrantyExpiry   DateTime?
@@ -96,6 +98,19 @@ model Asset {
 
   @@index([tenantId])
   @@index([tenantId, status])
+}
+
+model AssetCategory {
+  id       String  @id @default(cuid())
+  tenantId String?
+  name     String
+  isSystem Boolean @default(false)
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assets  Asset[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
 }
 
 model MaintenanceSchedule {
