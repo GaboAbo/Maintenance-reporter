@@ -186,5 +186,5 @@ Mock `@/lib/db` following the existing Vitest pattern.
 - Returns 403-equivalent error when `isSystem = true`
 - Returns 404-equivalent error when category belongs to a different tenant
 
-**`lib/services/assets.ts` tests** (extend existing `tests/services/assets.test.ts` if it exists):
+**`tests/services/assets.test.ts`** (extend existing file):
 - `createAsset` and `updateAsset` accept `categoryId` instead of `category` string
