@@ -203,8 +203,8 @@ export function ScheduleForm({ schedule }: ScheduleFormProps) {
                   onChange={() => toggleAsset(asset.id)}
                 />
                 {asset.name}
-                {asset.category && (
-                  <span className="text-zinc-400">({asset.category})</span>
+                {asset.category?.name && (
+                  <span className="text-zinc-400">({asset.category.name})</span>
                 )}
               </label>
             ))}
