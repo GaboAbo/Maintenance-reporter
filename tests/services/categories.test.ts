@@ -43,6 +43,13 @@ describe('listCategories', () => {
     expect(result[0].name).toBe('HVAC')
     expect(result[1].name).toBe('Custom')
   })
+
+  it('does not include categories from a different tenant', async () => {
+    vi.mocked(db.assetCategory.findMany).mockResolvedValue([])
+    await listCategories(TENANT)
+    const callArg = vi.mocked(db.assetCategory.findMany).mock.calls[0][0] as any
+    expect(callArg.where.OR).not.toContainEqual({ tenantId: 't2' })
+  })
 })
 
 describe('createCategory', () => {
@@ -97,5 +104,6 @@ describe('deleteCategory', () => {
     const err = await deleteCategory(TENANT, 'c1').catch((e) => e)
     expect(err).toMatchObject({ code: 'IN_USE' })
     expect(err.message).toContain('3')
+    expect(err.count).toBe(3)
   })
 })
