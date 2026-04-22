@@ -7,8 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { AssetStatus } from '@prisma/client'
-
-type Category = { id: string; name: string }
+import type { CategoryEntry } from '@/lib/services/categories'
 
 type AssetFormAsset = {
   id: string
@@ -23,7 +22,7 @@ type AssetFormAsset = {
 
 type AssetFormProps = {
   asset?: AssetFormAsset
-  categories: Category[]
+  categories: CategoryEntry[]
 }
 
 export function AssetForm({ asset, categories }: AssetFormProps) {
@@ -31,7 +30,7 @@ export function AssetForm({ asset, categories }: AssetFormProps) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<AssetStatus>(asset?.status ?? 'ACTIVE')
-  const [categoryId, setCategoryId] = useState<string>(asset?.categoryId ?? '')
+  const [categoryId, setCategoryId] = useState<string>(asset?.categoryId ?? 'none')
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -45,7 +44,7 @@ export function AssetForm({ asset, categories }: AssetFormProps) {
       model: form.get('model') || null,
       manufacturer: form.get('manufacturer') || null,
       location: form.get('location') || null,
-      categoryId: categoryId || null,
+      categoryId: categoryId === 'none' ? null : categoryId,
       status,
     }
 
@@ -106,7 +105,7 @@ export function AssetForm({ asset, categories }: AssetFormProps) {
               <SelectValue placeholder="No category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No category</SelectItem>
+              <SelectItem value="none">No category</SelectItem>
               {categories.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
                   {cat.name}
