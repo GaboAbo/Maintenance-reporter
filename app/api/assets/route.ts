@@ -10,6 +10,7 @@ const AssetSchema = z.object({
   manufacturer: z.string().optional(),
   location: z.string().optional(),
   categoryId: z.string().optional().nullable(),
+  clientId: z.string().optional().nullable(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'DECOMMISSIONED']).optional(),
   installationDate: z.string().datetime().optional().nullable(),
   warrantyExpiry: z.string().datetime().optional().nullable(),
