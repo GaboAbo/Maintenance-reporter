@@ -49,6 +49,14 @@ describe('createClient', () => {
     await expect(createClient(TENANT, 'Acme', 'acme@example.com')).rejects.toMatchObject({ code: 'DUPLICATE' })
     expect(db.client.create).not.toHaveBeenCalled()
   })
+
+  it('does not throw DUPLICATE when email exists for a different tenant', async () => {
+    vi.mocked(db.client.findFirst).mockResolvedValue(null) // different tenant means findFirst returns null for this tenant+email combo
+    const client = { id: 'c2', tenantId: TENANT, name: 'Acme Corp', email: 'acme@example.com', receivesReport: false, createdAt: new Date() }
+    vi.mocked(db.client.create).mockResolvedValue(client as any)
+    await expect(createClient(TENANT, 'Acme Corp', 'acme@example.com')).resolves.not.toThrow()
+    expect(db.client.create).toHaveBeenCalled()
+  })
 })
 
 describe('deleteClient', () => {
@@ -94,5 +102,10 @@ describe('toggleReportRecipient', () => {
   it('throws NOT_FOUND when client does not exist', async () => {
     vi.mocked(db.client.findFirst).mockResolvedValue(null)
     await expect(toggleReportRecipient(TENANT, 'x', true)).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  })
+
+  it('throws NOT_FOUND when client belongs to different tenant', async () => {
+    vi.mocked(db.client.findFirst).mockResolvedValue({ id: 'c1', tenantId: 'other' } as any)
+    await expect(toggleReportRecipient(TENANT, 'c1', true)).rejects.toMatchObject({ code: 'NOT_FOUND' })
   })
 })
