@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Wrench, ClipboardList, Calendar, Users, Settings } from 'lucide-react'
+import { LayoutDashboard, Wrench, ClipboardList, Calendar, Users, Tag, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/work-orders', label: 'Work Orders', icon: ClipboardList },
   { href: '/schedules', label: 'Schedules', icon: Calendar },
   { href: '/settings/users', label: 'Team', icon: Users },
+  { href: '/settings/categories', label: 'Categories', icon: Tag },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
