@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { AssetStatusBadge } from './AssetStatusBadge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { Asset, AssetStatus } from '@prisma/client'
+import type { Asset } from '@prisma/client'
 
 type AssetWithCountAndCategory = Omit<Asset, 'category'> & {
   _count: { workOrderItems: number }
