@@ -19,7 +19,9 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
           <h1 className="text-2xl font-semibold">{asset.name}</h1>
           <div className="flex items-center gap-2">
             <AssetStatusBadge status={asset.status} />
-            {asset.category && <span className="text-sm text-zinc-500">{asset.category}</span>}
+            {asset.category?.name && (
+              <span className="text-sm text-zinc-500">{asset.category.name}</span>
+            )}
           </div>
         </div>
         <Button asChild variant="outline">

@@ -1,11 +1,14 @@
 import Link from 'next/link'
-import type { Asset } from '@prisma/client'
 import { AssetStatusBadge } from './AssetStatusBadge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import type { Asset, AssetStatus } from '@prisma/client'
 
-type AssetWithCount = Asset & { _count: { workOrderItems: number } }
+type AssetWithCountAndCategory = Omit<Asset, 'category'> & {
+  _count: { workOrderItems: number }
+  category: { id: string; name: string } | null
+}
 
-export function AssetTable({ assets }: { assets: AssetWithCount[] }) {
+export function AssetTable({ assets }: { assets: AssetWithCountAndCategory[] }) {
   if (assets.length === 0) {
     return <p className="text-sm text-zinc-500">No assets yet. Add your first asset to get started.</p>
   }
@@ -32,7 +35,7 @@ export function AssetTable({ assets }: { assets: AssetWithCount[] }) {
                 <div className="text-xs text-zinc-400">S/N: {asset.serialNumber}</div>
               )}
             </TableCell>
-            <TableCell>{asset.category ?? '—'}</TableCell>
+            <TableCell>{asset.category?.name ?? '—'}</TableCell>
             <TableCell>{asset.location ?? '—'}</TableCell>
             <TableCell>
               <AssetStatusBadge status={asset.status} />
