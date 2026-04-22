@@ -3,16 +3,10 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-
-type Category = {
-  id: string
-  name: string
-  isSystem: boolean
-  tenantId: string | null
-}
+import type { CategoryEntry } from '@/lib/services/categories'
 
 type Props = {
-  categories: Category[]
+  categories: CategoryEntry[]
 }
 
 export function CategoryManager({ categories: initialCategories }: Props) {
@@ -97,14 +91,16 @@ export function CategoryManager({ categories: initialCategories }: Props) {
                     {deleteErrors[cat.id] && (
                       <span className="mr-3 text-xs text-red-600">{deleteErrors[cat.id]}</span>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={deletingId === cat.id}
-                      onClick={() => handleDelete(cat.id)}
-                    >
-                      {deletingId === cat.id ? 'Deleting…' : 'Delete'}
-                    </Button>
+                    {!cat.isSystem && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={deletingId === cat.id}
+                        onClick={() => handleDelete(cat.id)}
+                      >
+                        {deletingId === cat.id ? 'Deleting…' : 'Delete'}
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))

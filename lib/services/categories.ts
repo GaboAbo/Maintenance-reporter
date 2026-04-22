@@ -16,7 +16,9 @@ export async function listCategories(tenantId: string): Promise<CategoryEntry[]>
 }
 
 export async function createCategory(tenantId: string, name: string): Promise<CategoryEntry> {
-  const existing = await db.assetCategory.findFirst({ where: { tenantId, name } })
+  const existing = await db.assetCategory.findFirst({
+    where: { OR: [{ tenantId, name }, { tenantId: null, name }] }
+  })
   if (existing) throw Object.assign(new Error('A category with this name already exists'), { code: 'DUPLICATE' })
   return db.assetCategory.create({
     data: { tenantId, name, isSystem: false },

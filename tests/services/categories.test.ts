@@ -71,6 +71,11 @@ describe('createCategory', () => {
     await expect(createCategory(TENANT, 'HVAC')).rejects.toMatchObject({ code: 'DUPLICATE' })
     expect(db.assetCategory.create).not.toHaveBeenCalled()
   })
+
+  it('rejects a name that matches a system category', async () => {
+    vi.mocked(db.assetCategory.findFirst).mockResolvedValue({ id: 'sys-1', name: 'HVAC', isSystem: true, tenantId: null } as any)
+    await expect(createCategory('t1', 'HVAC')).rejects.toMatchObject({ code: 'DUPLICATE' })
+  })
 })
 
 describe('deleteCategory', () => {
