@@ -19,6 +19,7 @@ model Tenant {
   inviteTokens         InviteToken[]
   subscription         Subscription?
   assetCategories      AssetCategory[]
+  clients         Client[]
 }
 
 enum UserRole {
@@ -86,6 +87,8 @@ model Asset {
   location         String?
   categoryId       String?
   category         AssetCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  clientId         String?
+  client           Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
   status           AssetStatus @default(ACTIVE)
   installationDate DateTime?
   warrantyExpiry   DateTime?
@@ -110,6 +113,21 @@ model AssetCategory {
   assets  Asset[]
 
   @@unique([tenantId, name])
+}
+
+model Client {
+  id             String   @id @default(cuid())
+  tenantId       String
+  name           String
+  email          String
+  receivesReport Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assets Asset[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
 }
 
 model MaintenanceSchedule {
