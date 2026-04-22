@@ -55,6 +55,7 @@ export function CategoryManager({ categories: initialCategories }: Props) {
       const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' })
       if (res.status === 204) {
         setCategories((prev) => prev.filter((c) => c.id !== id))
+        setDeleteErrors((prev) => { const next = { ...prev }; delete next[id]; return next })
       } else {
         const data = await res.json().catch(() => ({}))
         setDeleteErrors((prev) => ({ ...prev, [id]: data.error ?? 'Failed to delete' }))
