@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { AssetStatus } from '@prisma/client'
 import type { CategoryEntry } from '@/lib/services/categories'
+import type { ClientEntry } from '@/lib/services/clients'
 
 type AssetFormAsset = {
   id: string
@@ -17,20 +18,23 @@ type AssetFormAsset = {
   manufacturer?: string | null
   location?: string | null
   categoryId?: string | null
+  clientId?: string | null
   status: AssetStatus
 }
 
 type AssetFormProps = {
   asset?: AssetFormAsset
   categories: CategoryEntry[]
+  clients: ClientEntry[]
 }
 
-export function AssetForm({ asset, categories }: AssetFormProps) {
+export function AssetForm({ asset, categories, clients }: AssetFormProps) {
   const router = useRouter()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<AssetStatus>(asset?.status ?? 'ACTIVE')
   const [categoryId, setCategoryId] = useState<string>(asset?.categoryId ?? 'none')
+  const [clientId, setClientId] = useState<string>(asset?.clientId ?? 'none')
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -45,6 +49,7 @@ export function AssetForm({ asset, categories }: AssetFormProps) {
       manufacturer: form.get('manufacturer') || null,
       location: form.get('location') || null,
       categoryId: categoryId === 'none' ? null : categoryId,
+      clientId: clientId === 'none' ? null : clientId,
       status,
     }
 
@@ -115,9 +120,27 @@ export function AssetForm({ asset, categories }: AssetFormProps) {
           </Select>
         </div>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="location">Location</Label>
-        <Input id="location" name="location" defaultValue={asset?.location ?? ''} />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="location">Location</Label>
+          <Input id="location" name="location" defaultValue={asset?.location ?? ''} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="client">Client</Label>
+          <Select value={clientId} onValueChange={setClientId}>
+            <SelectTrigger id="client">
+              <SelectValue placeholder="No client" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No client</SelectItem>
+              {clients.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="status">Status</Label>
