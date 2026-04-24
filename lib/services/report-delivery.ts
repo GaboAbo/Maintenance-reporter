@@ -32,7 +32,7 @@ export async function sendReportsForTenant(tenantId: string): Promise<{ sent: nu
     const workOrderItems = await db.workOrderItem.findMany({
       where: {
         assetId: { in: assetIds },
-        workOrder: { createdAt: { gte: periodStart, lte: periodEnd } },
+        workOrder: { completedAt: { gte: periodStart, lte: periodEnd } },
       },
       include: {
         workOrder: {
