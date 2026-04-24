@@ -13,3 +13,21 @@ export async function sendEmail(to: string, subject: string, body: string): Prom
     throw new Error(`Resend error: ${error.message}`)
   }
 }
+
+export async function sendEmailWithAttachment(
+  to: string,
+  subject: string,
+  body: string,
+  attachment: { filename: string; content: Buffer }
+): Promise<void> {
+  const { error } = await resend.emails.send({
+    from: process.env.RESEND_FROM_EMAIL!,
+    to,
+    subject,
+    text: body,
+    attachments: [{ filename: attachment.filename, content: attachment.content }],
+  })
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`)
+  }
+}

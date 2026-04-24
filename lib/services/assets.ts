@@ -8,6 +8,7 @@ type AssetInput = {
   manufacturer?: string | null
   location?: string | null
   categoryId?: string | null
+  clientId?: string | null
   status?: AssetStatus
   installationDate?: Date | null
   warrantyExpiry?: Date | null
@@ -20,6 +21,7 @@ export async function listAssets(tenantId: string) {
     include: {
       _count: { select: { workOrderItems: true } },
       category: { select: { id: true, name: true } },
+      client: { select: { id: true, name: true } },
     },
   })
 }
@@ -29,6 +31,7 @@ export async function getAsset(tenantId: string, id: string) {
     where: { id, tenantId },
     include: {
       category: { select: { id: true, name: true } },
+      client: { select: { id: true, name: true } },
       workOrderItems: {
         include: { workOrder: { select: { id: true, type: true, status: true, createdAt: true } } },
         orderBy: { workOrder: { createdAt: 'desc' } },

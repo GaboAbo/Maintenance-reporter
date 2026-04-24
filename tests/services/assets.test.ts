@@ -63,6 +63,14 @@ describe('createAsset', () => {
       expect.objectContaining({ data: expect.objectContaining({ categoryId: 'cat1' }) })
     )
   })
+
+  it('passes clientId when provided', async () => {
+    vi.mocked(db.asset.create).mockResolvedValue({ id: 'a1' } as any)
+    await createAsset(TENANT, { name: 'Pump', clientId: 'cl1' })
+    expect(db.asset.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ clientId: 'cl1' }) })
+    )
+  })
 })
 
 describe('updateAsset', () => {

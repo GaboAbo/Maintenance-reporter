@@ -3,13 +3,15 @@ import { AssetForm } from '@/components/assets/AssetForm'
 import { getTenantId } from '@/lib/tenant'
 import { getAsset } from '@/lib/services/assets'
 import { listCategories } from '@/lib/services/categories'
+import { listClients } from '@/lib/services/clients'
 
 export default async function EditAssetPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const tenantId = await getTenantId()
-  const [asset, categories] = await Promise.all([
+  const [asset, categories, clients] = await Promise.all([
     getAsset(tenantId, id),
     listCategories(tenantId),
+    listClients(tenantId),
   ])
 
   if (!asset) notFound()
@@ -20,7 +22,7 @@ export default async function EditAssetPage({ params }: { params: Promise<{ id: 
         <h1 className="text-2xl font-semibold">Edit asset</h1>
         <p className="text-sm text-zinc-500">{asset.name}</p>
       </div>
-      <AssetForm asset={asset} categories={categories} />
+      <AssetForm asset={asset} categories={categories} clients={clients} />
     </div>
   )
 }
