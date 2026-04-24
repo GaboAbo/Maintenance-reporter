@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/pm-check",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-report",
+      "schedule": "0 8 * * 1"
     }
   ]
 }
