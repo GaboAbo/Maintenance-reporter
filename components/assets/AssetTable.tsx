@@ -3,12 +3,13 @@ import { AssetStatusBadge } from './AssetStatusBadge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { Asset } from '@prisma/client'
 
-type AssetWithCountAndCategory = Omit<Asset, 'category'> & {
+type AssetWithCountCategoryAndClient = Omit<Asset, 'category' | 'client'> & {
   _count: { workOrderItems: number }
   category: { id: string; name: string } | null
+  client: { id: string; name: string } | null
 }
 
-export function AssetTable({ assets }: { assets: AssetWithCountAndCategory[] }) {
+export function AssetTable({ assets }: { assets: AssetWithCountCategoryAndClient[] }) {
   if (assets.length === 0) {
     return <p className="text-sm text-zinc-500">No assets yet. Add your first asset to get started.</p>
   }
@@ -19,6 +20,7 @@ export function AssetTable({ assets }: { assets: AssetWithCountAndCategory[] }) 
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Category</TableHead>
+          <TableHead>Client</TableHead>
           <TableHead>Location</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Work orders</TableHead>
@@ -36,6 +38,7 @@ export function AssetTable({ assets }: { assets: AssetWithCountAndCategory[] }) 
               )}
             </TableCell>
             <TableCell>{asset.category?.name ?? '—'}</TableCell>
+            <TableCell>{asset.client?.name ?? '—'}</TableCell>
             <TableCell>{asset.location ?? '—'}</TableCell>
             <TableCell>
               <AssetStatusBadge status={asset.status} />

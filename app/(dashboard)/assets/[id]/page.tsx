@@ -35,6 +35,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
           ['Model', asset.model],
           ['Manufacturer', asset.manufacturer],
           ['Location', asset.location],
+          ['Client', asset.client?.name],
           ['Installed', asset.installationDate ? new Date(asset.installationDate).toLocaleDateString() : null],
           ['Warranty expires', asset.warrantyExpiry ? new Date(asset.warrantyExpiry).toLocaleDateString() : null],
         ].map(([label, value]) => (
